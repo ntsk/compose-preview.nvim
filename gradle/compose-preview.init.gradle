@@ -1,0 +1,61 @@
+import org.gradle.api.attributes.Attribute
+
+gradle.projectsEvaluated {
+    gradle.rootProject.allprojects { p ->
+        ['com.android.application', 'com.android.library'].each { pluginId ->
+            p.plugins.withId(pluginId) {
+                p.tasks.register('composePreviewInfo') {
+                    doLast {
+                        def variant = (p.findProperty('composePreviewVariant') ?: 'debug').toString()
+                        def artifactType = Attribute.of('artifactType', String)
+                        def configuration = p.configurations.getByName("${variant}RuntimeClasspath")
+
+                        def dependencies = configuration.incoming.artifactView { view ->
+                            view.attributes.attribute(artifactType, 'android-classes-jar')
+                            view.lenient(true)
+                        }.files.files
+
+                        def projectClasses = []
+                        ["tmp/kotlin-classes/${variant}", "intermediates/javac/${variant}/classes"].each { relative ->
+                            def dir = new File(p.buildDir, relative)
+                            if (dir.isDirectory()) {
+                                projectClasses << dir.absolutePath
+                            }
+                        }
+
+                        def rClassDir = new File(p.buildDir, "intermediates/compile_and_runtime_not_namespaced_r_class_jar/${variant}")
+                        if (rClassDir.isDirectory()) {
+                            rClassDir.eachFileRecurse { f ->
+                                if (f.name == 'R.jar') {
+                                    projectClasses << f.absolutePath
+                                }
+                            }
+                        }
+
+                        def resourceApk = null
+                        def apkDir = new File(p.buildDir, "intermediates/linked_resources_binary_format/${variant}")
+                        if (apkDir.isDirectory()) {
+                            apkDir.eachFileRecurse { f ->
+                                if (f.name.endsWith('.ap_')) {
+                                    resourceApk = f.absolutePath
+                                }
+                            }
+                        }
+
+                        def android = p.extensions.findByName('android')
+
+                        println 'COMPOSE_PREVIEW_INFO_BEGIN'
+                        println groovy.json.JsonOutput.toJson([
+                            project         : p.path,
+                            namespace       : android?.namespace,
+                            classPath       : projectClasses + dependencies.collect { it.absolutePath },
+                            projectClassPath: projectClasses,
+                            resourceApkPath : resourceApk,
+                        ])
+                        println 'COMPOSE_PREVIEW_INFO_END'
+                    }
+                }
+            }
+        }
+    }
+}
