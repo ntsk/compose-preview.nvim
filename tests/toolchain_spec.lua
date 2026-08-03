@@ -73,3 +73,24 @@ describe('toolchain.is_installed', function()
     assert.is_true(toolchain.is_installed({ cache_dir = dir }))
   end)
 end)
+
+describe('toolchain.install', function()
+  it('インストール済みならダウンロードせず paths を返す', function()
+    local dir = tmpdir()
+    local paths = toolchain.paths({ cache_dir = dir })
+    vim.fn.writefile({ '' }, paths.renderer_jar)
+    vim.fn.mkdir(paths.layoutlib_dir .. '/data/fonts', 'p')
+
+    local done, received_err, received_paths = false, 'unset', nil
+    toolchain.install({ cache_dir = dir }, function(err, result)
+      done, received_err, received_paths = true, err, result
+    end)
+    vim.wait(1000, function()
+      return done
+    end)
+
+    assert.is_true(done)
+    assert.is_nil(received_err)
+    assert.are.equal(paths.renderer_jar, received_paths.renderer_jar)
+  end)
+end)
