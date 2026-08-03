@@ -34,6 +34,21 @@ layoutlib は 17.0.0 と 17.0.1 で `RecyclableImage` の ABI が変わってお
 - **Java 21 以降**（layoutlib は class file 65.0 でビルドされている）
 - Android SDK と Gradle wrapper を持つ Compose プロジェクト
 
+## 使い方
+
+Compose の `@Preview` を含む `.kt` を開いて `:ComposePreview` を実行する。
+
+```lua
+require('compose-preview').setup({
+  variant = 'debug',
+  java = nil,      -- 省略時は Java 21 以降を自動検出する
+  open_cmd = nil,  -- 省略時は vim.ui.open を使う
+})
+```
+
+`@Preview(name = "...")` を付けていればその名前がカードの見出しになる。
+レンダリングに失敗したプレビューは、エラーメッセージとスタックトレースがその場に表示される。
+
 ## 開発
 
 ```sh
