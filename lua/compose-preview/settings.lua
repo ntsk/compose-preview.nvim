@@ -1,16 +1,26 @@
 local M = {}
 
-local function screenshots(previews)
+function M.preview_ids(previews)
   local counters = {}
-  local result = {}
+  local ids = {}
 
   for _, preview in ipairs(previews) do
     local index = counters[preview.method_fqn] or 0
     counters[preview.method_fqn] = index + 1
+    table.insert(ids, preview.method_fqn .. '_' .. index)
+  end
 
+  return ids
+end
+
+local function screenshots(previews)
+  local ids = M.preview_ids(previews)
+  local result = {}
+
+  for index, preview in ipairs(previews) do
     table.insert(result, {
       methodFQN = preview.method_fqn,
-      previewId = preview.method_fqn .. '_' .. index,
+      previewId = ids[index],
       previewParams = preview.params or {},
     })
   end
