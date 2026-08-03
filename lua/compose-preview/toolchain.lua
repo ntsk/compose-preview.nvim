@@ -1,13 +1,13 @@
 local M = {}
 
 M.RENDERER_VERSION = '0.0.1-alpha16'
-M.LAYOUTLIB_VERSION = '17.0.1'
+M.LAYOUTLIB_VERSION = '17.0.0'
+M.LAYOUTLIB_DATA_VERSION = '17.0.1'
 
 local MAVEN_BASE = 'https://dl.google.com/dl/android/maven2'
 local RENDERER_GROUP = 'com.android.tools.compose'
 local RENDERER_ARTIFACT = 'compose-preview-renderer'
 local LAYOUTLIB_GROUP = 'com.android.tools.layoutlib'
-local LAYOUTLIB_ARTIFACT = 'layoutlib-runtime'
 
 function M.artifact_url(group, artifact, version)
   return table.concat({
@@ -28,21 +28,34 @@ function M.paths(opts)
   local cache_dir = opts.cache_dir or M.default_cache_dir()
   local renderer_version = opts.renderer_version or M.RENDERER_VERSION
   local layoutlib_version = opts.layoutlib_version or M.LAYOUTLIB_VERSION
+  local layoutlib_data_version = opts.layoutlib_data_version or M.LAYOUTLIB_DATA_VERSION
+
+  local renderer_jar = vim.fs.joinpath(cache_dir, RENDERER_ARTIFACT .. '-' .. renderer_version .. '.jar')
+  local layoutlib_jar = vim.fs.joinpath(cache_dir, 'layoutlib-' .. layoutlib_version .. '.jar')
+  local layoutlib_dir = vim.fs.joinpath(cache_dir, 'layoutlib-data-' .. layoutlib_data_version)
 
   return {
     cache_dir = cache_dir,
     renderer_version = renderer_version,
     layoutlib_version = layoutlib_version,
-    renderer_jar = vim.fs.joinpath(cache_dir, RENDERER_ARTIFACT .. '-' .. renderer_version .. '.jar'),
-    layoutlib_dir = vim.fs.joinpath(cache_dir, 'layoutlib-' .. layoutlib_version),
+    layoutlib_data_version = layoutlib_data_version,
+    renderer_jar = renderer_jar,
+    layoutlib_jar = layoutlib_jar,
+    layoutlib_dir = layoutlib_dir,
+    framework_res_jar = vim.fs.joinpath(layoutlib_dir, 'data', 'framework_res.jar'),
+    classpath = renderer_jar .. ':' .. layoutlib_jar,
     renderer_url = M.artifact_url(RENDERER_GROUP, RENDERER_ARTIFACT, renderer_version),
-    layoutlib_url = M.artifact_url(LAYOUTLIB_GROUP, LAYOUTLIB_ARTIFACT, layoutlib_version),
+    layoutlib_url = M.artifact_url(LAYOUTLIB_GROUP, 'layoutlib', layoutlib_version),
+    layoutlib_data_url = M.artifact_url(LAYOUTLIB_GROUP, 'layoutlib-runtime', layoutlib_data_version),
+    framework_res_url = M.artifact_url(LAYOUTLIB_GROUP, 'layoutlib-resources', layoutlib_data_version),
   }
 end
 
 function M.is_installed(opts)
   local paths = M.paths(opts)
   return vim.fn.filereadable(paths.renderer_jar) == 1
+    and vim.fn.filereadable(paths.layoutlib_jar) == 1
+    and vim.fn.filereadable(paths.framework_res_jar) == 1
     and vim.fn.isdirectory(vim.fs.joinpath(paths.layoutlib_dir, 'data', 'fonts')) == 1
 end
 
@@ -64,6 +77,13 @@ local function download(url, dest, on_done)
   end)
 end
 
+local function download_if_missing(url, dest, on_done)
+  if vim.fn.filereadable(dest) == 1 then
+    return on_done(nil)
+  end
+  download(url, dest, on_done)
+end
+
 function M.install(opts, on_done)
   local paths = M.paths(opts)
 
@@ -71,33 +91,42 @@ function M.install(opts, on_done)
     on_done(err, paths)
   end
 
-  local function install_layoutlib()
+  local function install_framework_res()
+    download_if_missing(paths.framework_res_url, paths.framework_res_jar, finish)
+  end
+
+  local function install_layoutlib_data()
     if vim.fn.isdirectory(vim.fs.joinpath(paths.layoutlib_dir, 'data', 'fonts')) == 1 then
-      return finish(nil)
+      return install_framework_res()
     end
 
     local archive = paths.layoutlib_dir .. '.jar'
-    download(paths.layoutlib_url, archive, function(err)
+    download(paths.layoutlib_data_url, archive, function(err)
       if err then
         return finish(err)
       end
       run({ 'unzip', '-q', '-o', archive, '-d', paths.layoutlib_dir }, function(unzip_err)
         vim.fn.delete(archive)
-        finish(unzip_err)
+        if unzip_err then
+          return finish(unzip_err)
+        end
+        install_framework_res()
       end)
     end)
   end
 
-  if vim.fn.filereadable(paths.renderer_jar) == 1 then
-    return install_layoutlib()
-  end
-
   vim.fn.mkdir(paths.cache_dir, 'p')
-  download(paths.renderer_url, paths.renderer_jar, function(err)
+
+  download_if_missing(paths.renderer_url, paths.renderer_jar, function(err)
     if err then
       return finish(err)
     end
-    install_layoutlib()
+    download_if_missing(paths.layoutlib_url, paths.layoutlib_jar, function(layoutlib_err)
+      if layoutlib_err then
+        return finish(layoutlib_err)
+      end
+      install_layoutlib_data()
+    end)
   end)
 end
 
