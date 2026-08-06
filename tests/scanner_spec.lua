@@ -227,6 +227,83 @@ fun Greeting(plain: String, @PreviewParameter(P::class) state: UiState) {
     assert.are.equal('com.example.P', previews[1].method_params[1].provider)
   end)
 
+  it('expands @PreviewLightDark into a light and a dark preview', function()
+    local src = [[
+package com.example
+
+@PreviewLightDark
+@Composable
+fun Greeting() {
+}
+]]
+    local previews = scanner.scan(src, 'Foo.kt')
+
+    assert.are.equal(2, #previews)
+    assert.are.equal('Light', previews[1].params.name)
+    assert.are.equal('Dark', previews[2].params.name)
+    assert.are.equal('33', previews[2].params.uiMode)
+    assert.are.equal('com.example.FooKt.Greeting', previews[1].method_fqn)
+  end)
+
+  it('expands @PreviewFontScale into every scale', function()
+    local src = [[
+@PreviewFontScale
+@Composable
+fun Greeting() {
+}
+]]
+    local previews = scanner.scan(src, 'Foo.kt')
+
+    assert.are.equal(7, #previews)
+    assert.are.equal('85%', previews[1].params.name)
+    assert.are.equal('0.85', previews[1].params.fontScale)
+  end)
+
+  it('expands @PreviewDynamicColors into every wallpaper', function()
+    local src = [[
+@PreviewDynamicColors
+@Composable
+fun Greeting() {
+}
+]]
+    local previews = scanner.scan(src, 'Foo.kt')
+
+    assert.are.equal(4, #previews)
+    assert.are.equal('Red', previews[1].params.name)
+    assert.are.equal('0', previews[1].params.wallpaper)
+  end)
+
+  it('expands @PreviewScreenSizes into every device', function()
+    local src = [[
+@PreviewScreenSizes
+@Composable
+fun Greeting() {
+}
+]]
+    local previews = scanner.scan(src, 'Foo.kt')
+
+    assert.are.equal(5, #previews)
+    assert.are.equal('Phone', previews[1].params.name)
+    assert.are.equal('true', previews[1].params.showSystemUi)
+    assert.is_truthy(previews[1].params.device:find('reference_phone', 1, true))
+  end)
+
+  it('combines a multipreview annotation with a plain @Preview', function()
+    local src = [[
+@Preview(name = "Default")
+@PreviewLightDark
+@Composable
+fun Greeting() {
+}
+]]
+    local previews = scanner.scan(src, 'Foo.kt')
+
+    assert.are.equal(3, #previews)
+    assert.are.equal('Default', previews[1].params.name)
+    assert.are.equal('Light', previews[2].params.name)
+    assert.are.equal('Dark', previews[3].params.name)
+  end)
+
   it('builds the file class name for snake_case file names', function()
     local src = [[
 @Preview
