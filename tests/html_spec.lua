@@ -66,6 +66,44 @@ describe('html.build', function()
     assert.is_nil(page:find('<img src=x', 1, true))
   end)
 
+  it('never renders an empty error card', function()
+    local page = build({
+      { name = 'BlankError', ok = false, error = { message = '' } },
+    })
+
+    assert.is_nil(page:find('<strong></strong>', 1, true))
+  end)
+
+  it('shows render problems and their stack traces', function()
+    local page = build({
+      {
+        name = 'X',
+        ok = false,
+        error = {
+          message = 'ERROR_NOT_INFLATED',
+          problems = {
+            { message = 'uiState is null', stack_trace = 'at Oshirase.kt:12' },
+          },
+        },
+      },
+    })
+
+    assert.is_truthy(page:find('uiState is null', 1, true))
+    assert.is_truthy(page:find('at Oshirase.kt:12', 1, true))
+  end)
+
+  it('escapes HTML inside problems', function()
+    local page = build({
+      {
+        name = 'X',
+        ok = false,
+        error = { problems = { { message = '<img src=x onerror=alert(1)>' } } },
+      },
+    })
+
+    assert.is_nil(page:find('<img src=x', 1, true))
+  end)
+
   it('says so when there are no previews', function()
     local page = build({})
 

@@ -93,6 +93,70 @@ describe('results.parse', function()
     assert.are_not.equal(vim.NIL, parsed.previews[1].error)
   end)
 
+  it('keeps render problems, stripping HTML from their text', function()
+    local parsed = results.parse([[
+      {
+        "screenshotResults": [
+          {
+            "previewId": "a",
+            "methodFQN": "b",
+            "imagePath": null,
+            "error": {
+              "status": "ERROR_NOT_INFLATED",
+              "message": "",
+              "stackTrace": "",
+              "problems": [
+                {
+                  "html": "Exception raised during rendering: uiState is null (<A HREF=\"\">Details</A>)",
+                  "stackTrace": "at Foo.kt:1"
+                }
+              ],
+              "brokenClasses": [],
+              "missingClasses": []
+            }
+          }
+        ]
+      }
+    ]])
+
+    local problems = parsed.previews[1].error.problems
+    assert.are.equal(1, #problems)
+    assert.are.equal('Exception raised during rendering: uiState is null (Details)', problems[1].message)
+    assert.are.equal('at Foo.kt:1', problems[1].stack_trace)
+  end)
+
+  it('falls back to the first problem when message is empty', function()
+    local parsed = results.parse([[
+      {
+        "screenshotResults": [
+          {
+            "previewId": "a",
+            "methodFQN": "b",
+            "error": {
+              "status": "ERROR_NOT_INFLATED",
+              "message": "",
+              "problems": [{ "html": "uiState is null", "stackTrace": "" }]
+            }
+          }
+        ]
+      }
+    ]])
+
+    assert.are.equal('uiState is null', parsed.previews[1].error.message)
+  end)
+
+  it('falls back to the status when there is nothing else', function()
+    local parsed = results.parse([[
+      {
+        "screenshotResults": [
+          { "previewId": "a", "methodFQN": "b", "error": { "status": "ERROR_NOT_INFLATED", "message": "" } }
+        ]
+      }
+    ]])
+
+    assert.are.equal('ERROR_NOT_INFLATED', parsed.previews[1].error.message)
+  end)
+
   it('returns nil and an error message for broken JSON', function()
     local parsed, err = results.parse('{ not json')
 
