@@ -7,16 +7,48 @@ local function value(raw)
   return raw
 end
 
+local function strip_html(text)
+  local stripped = tostring(text):gsub('<[^>]*>', '')
+  return vim.trim(stripped:gsub('%s*%(Details%)%s*$', ''))
+end
+
+local function normalize_problems(raw)
+  local problems = {}
+
+  for _, problem in ipairs(value(raw) or {}) do
+    local message = value(problem.html)
+    table.insert(problems, {
+      message = message and strip_html(message) or nil,
+      stack_trace = value(problem.stackTrace),
+    })
+  end
+
+  return problems
+end
+
+local function present(text)
+  if text and text ~= '' then
+    return text
+  end
+  return nil
+end
+
 local function normalize_error(raw)
   local err = value(raw)
   if not err then
     return nil
   end
 
+  local problems = normalize_problems(err.problems)
+  local message = present(value(err.message))
+    or (problems[1] and present(problems[1].message))
+    or present(value(err.status))
+
   return {
     status = value(err.status),
-    message = value(err.message),
-    stack_trace = value(err.stackTrace),
+    message = message,
+    stack_trace = present(value(err.stackTrace)),
+    problems = problems,
     missing_classes = value(err.missingClasses) or {},
   }
 end

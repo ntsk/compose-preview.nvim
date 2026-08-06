@@ -121,7 +121,7 @@ describe('results.parse', function()
 
     local problems = parsed.previews[1].error.problems
     assert.are.equal(1, #problems)
-    assert.are.equal('Exception raised during rendering: uiState is null (Details)', problems[1].message)
+    assert.are.equal('Exception raised during rendering: uiState is null', problems[1].message)
     assert.are.equal('at Foo.kt:1', problems[1].stack_trace)
   end)
 
