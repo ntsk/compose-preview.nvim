@@ -1,3 +1,5 @@
+local multipreview = require('compose-preview.multipreview')
+
 local M = {}
 
 local function text(node, source)
@@ -85,6 +87,11 @@ local function preview_annotations(declaration, source)
           local name, value_arguments = annotation_parts(modifier, source)
           if name == 'Preview' then
             table.insert(found, parse_arguments(value_arguments, source))
+          else
+            local expanded = multipreview.expand(name)
+            if expanded then
+              vim.list_extend(found, expanded)
+            end
           end
         end
       end
