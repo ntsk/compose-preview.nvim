@@ -141,6 +141,7 @@ function M.open(bufnr)
         return fail(gradle_err)
       end
 
+      vim.fn.delete(dirs.output, 'rf')
       vim.fn.mkdir(dirs.output, 'p')
       vim.fn.mkdir(dirs.metadata, 'p')
 
