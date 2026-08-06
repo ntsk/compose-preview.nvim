@@ -81,6 +81,48 @@ describe('view.items', function()
     assert.are.equal('out/b.png', items[2].image_src)
   end)
 
+  it('expands a @PreviewParameter provider into one item per rendered value', function()
+    local previews = { preview('com.example.FooKt.Greeting', {}, 'Greeting') }
+    local results = {
+      previews = {
+        { preview_id = 'com.example.FooKt.Greeting_0', image_path = 'a_0.png', ok = true },
+        { preview_id = 'com.example.FooKt.Greeting_0', image_path = 'a_1.png', ok = true },
+        { preview_id = 'com.example.FooKt.Greeting_0', image_path = 'a_2.png', ok = true },
+      },
+    }
+
+    local items = view.items(previews, results, 'out')
+
+    assert.are.equal(3, #items)
+    assert.are.equal('out/a_0.png', items[1].image_src)
+    assert.are.equal('out/a_1.png', items[2].image_src)
+    assert.are.equal('out/a_2.png', items[3].image_src)
+  end)
+
+  it('numbers the labels when a preview renders several values', function()
+    local previews = { preview('com.example.FooKt.G', { name = 'Dark' }, 'G') }
+    local results = {
+      previews = {
+        { preview_id = 'com.example.FooKt.G_0', image_path = 'a.png', ok = true },
+        { preview_id = 'com.example.FooKt.G_0', image_path = 'b.png', ok = true },
+      },
+    }
+
+    local items = view.items(previews, results, 'out')
+
+    assert.are.equal('Dark (1/2)', items[1].label)
+    assert.are.equal('Dark (2/2)', items[2].label)
+  end)
+
+  it('leaves the label alone for a single result', function()
+    local previews = { preview('com.example.FooKt.G', { name = 'Dark' }, 'G') }
+    local results = {
+      previews = { { preview_id = 'com.example.FooKt.G_0', image_path = 'a.png', ok = true } },
+    }
+
+    assert.are.equal('Dark', view.items(previews, results, 'out')[1].label)
+  end)
+
   it('treats a preview with no matching result as failed', function()
     local previews = { preview('com.example.FooKt.Greeting', {}, 'Greeting') }
     local items = view.items(previews, { previews = {} }, 'out')
