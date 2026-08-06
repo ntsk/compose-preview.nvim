@@ -64,6 +64,53 @@ describe('gradle.parse_info', function()
   end)
 end)
 
+describe('gradle.command', function()
+  local function opts(extra)
+    return vim.tbl_extend('force', {
+      root = '/proj',
+      module = ':app',
+      init_script = '/plugin/init.gradle',
+    }, extra or {})
+  end
+
+  it('composePreviewInfo だけを実行する', function()
+    local cmd = gradle.command(opts())
+
+    assert.are.equal('/proj/gradlew', cmd[1])
+    assert.is_truthy(vim.tbl_contains(cmd, ':app:composePreviewInfo'))
+    assert.is_truthy(vim.tbl_contains(cmd, '--init-script'))
+    assert.is_truthy(vim.tbl_contains(cmd, '/plugin/init.gradle'))
+  end)
+
+  it('variant 未指定なら composePreviewVariant を渡さない', function()
+    for _, arg in ipairs(gradle.command(opts())) do
+      assert.is_nil(arg:match('composePreviewVariant'))
+    end
+  end)
+
+  it('variant 指定時はプロパティとして渡す', function()
+    local cmd = gradle.command(opts({ variant = 'devDebug' }))
+
+    assert.is_truthy(vim.tbl_contains(cmd, '-PcomposePreviewVariant=devDebug'))
+  end)
+
+  it('ルートモジュールならコロンだけのタスク名にする', function()
+    local cmd = gradle.command(opts({ module = '' }))
+
+    assert.is_truthy(vim.tbl_contains(cmd, ':composePreviewInfo'))
+  end)
+end)
+
+describe('gradle.describe_variant_error', function()
+  it('候補バリアントを並べて示す', function()
+    local message = gradle.describe_variant_error('debug', { 'devDebug', 'productionDebug' })
+
+    assert.is_truthy(message:find('debug', 1, true))
+    assert.is_truthy(message:find('devDebug', 1, true))
+    assert.is_truthy(message:find('productionDebug', 1, true))
+  end)
+end)
+
 describe('gradle.find_project_root', function()
   it('gradlew を持つ最も近い祖先を返す', function()
     local root = tmpdir()
