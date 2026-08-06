@@ -31,6 +31,20 @@ describe('renderer.MINIMUM_JAVA_VERSION', function()
   end)
 end)
 
+describe('renderer.java_home', function()
+  it('strips bin/java to get the JDK home', function()
+    assert.are.equal('/jdk21/Contents/Home', renderer.java_home('/jdk21/Contents/Home/bin/java'))
+  end)
+
+  it('returns nil for a bare command name', function()
+    assert.is_nil(renderer.java_home('java'))
+  end)
+
+  it('returns nil for nil', function()
+    assert.is_nil(renderer.java_home(nil))
+  end)
+end)
+
 describe('renderer.command', function()
   it('puts the renderer and layoutlib on -cp and calls the main class', function()
     local cmd = renderer.command({

@@ -101,6 +101,41 @@ describe('gradle.command', function()
   end)
 end)
 
+describe('gradle.needs_newer_jvm', function()
+  it('detects the dependency JVM requirement message', function()
+    local result = {
+      stderr = table.concat({
+        'FAILURE: Build failed with an exception.',
+        '> Dependency requires at least JVM runtime version 21. This build uses a Java 17 JVM.',
+      }, '\n'),
+    }
+
+    assert.is_true(gradle.needs_newer_jvm(result))
+  end)
+
+  it('detects the "run this build using a Java N or newer JVM" hint', function()
+    local result = { stderr = '> Run this build using a Java 21 or newer JVM.' }
+
+    assert.is_true(gradle.needs_newer_jvm(result))
+  end)
+
+  it('detects an unsupported class file version', function()
+    local result = { stdout = 'Unsupported class file major version 65' }
+
+    assert.is_true(gradle.needs_newer_jvm(result))
+  end)
+
+  it('is false for unrelated failures', function()
+    local result = { stderr = "> Task 'composePreviewInfo' not found in project ':app'." }
+
+    assert.is_false(gradle.needs_newer_jvm(result))
+  end)
+
+  it('is false when there is no output at all', function()
+    assert.is_false(gradle.needs_newer_jvm({}))
+  end)
+end)
+
 describe('gradle.describe_variant_error', function()
   it('lists the candidate variants', function()
     local message = gradle.describe_variant_error('debug', { 'devDebug', 'productionDebug' })
