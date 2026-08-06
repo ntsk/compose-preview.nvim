@@ -12,7 +12,7 @@ local OUTPUT_DIR_NAME = 'out'
 
 M.config = {
   java = nil,
-  variant = 'debug',
+  variant = nil,
   cache_dir = nil,
   open_cmd = nil,
   timeout = renderer.DEFAULT_TIMEOUT_MS,

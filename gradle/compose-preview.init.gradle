@@ -1,12 +1,60 @@
 import org.gradle.api.attributes.Attribute
 
+def excludedVariantSuffixes = ['AndroidTest', 'UnitTest', 'ScreenshotTest', 'Test']
+
+def detectVariants = { project ->
+    def names = project.tasks.names
+    def found = []
+    names.each { name ->
+        def matcher = name =~ /^process(.+)Resources$/
+        if (matcher.matches()) {
+            def capitalized = matcher.group(1)
+            if (excludedVariantSuffixes.any { capitalized.endsWith(it) }) {
+                return
+            }
+            if (names.contains("compile${capitalized}Kotlin") || names.contains("compile${capitalized}JavaWithJavac")) {
+                found << capitalized[0].toLowerCase() + capitalized.substring(1)
+            }
+        }
+    }
+    return found.unique().sort()
+}
+
+def pickVariant = { variants ->
+    def debugVariants = variants.findAll { it.toLowerCase().endsWith('debug') }
+    return (debugVariants ?: variants).min { it.length() }
+}
+
 gradle.projectsEvaluated {
     gradle.rootProject.allprojects { p ->
         ['com.android.application', 'com.android.library'].each { pluginId ->
             p.plugins.withId(pluginId) {
+                def variants = detectVariants(p)
+                def requested = p.findProperty('composePreviewVariant')?.toString()
+                def variant = requested ?: pickVariant(variants)
+
                 p.tasks.register('composePreviewInfo') {
+                    if (variant && variants.contains(variant)) {
+                        def capitalized = variant[0].toUpperCase() + variant.substring(1)
+                        dependsOn "${p.path}:process${capitalized}Resources"
+                        if (p.tasks.names.contains("compile${capitalized}Kotlin")) {
+                            dependsOn "${p.path}:compile${capitalized}Kotlin"
+                        }
+                    }
+
                     doLast {
-                        def variant = (p.findProperty('composePreviewVariant') ?: 'debug').toString()
+                        if (!variant || !variants.contains(variant)) {
+                            println 'COMPOSE_PREVIEW_INFO_BEGIN'
+                            println groovy.json.JsonOutput.toJson([
+                                project          : p.path,
+                                variant          : variant,
+                                availableVariants: variants,
+                                error            : "variant '${variant}' が見つかりません",
+                            ])
+                            println 'COMPOSE_PREVIEW_INFO_END'
+                            return
+                        }
+
                         def artifactType = Attribute.of('artifactType', String)
                         def configuration = p.configurations.getByName("${variant}RuntimeClasspath")
 
@@ -46,11 +94,13 @@ gradle.projectsEvaluated {
 
                         println 'COMPOSE_PREVIEW_INFO_BEGIN'
                         println groovy.json.JsonOutput.toJson([
-                            project         : p.path,
-                            namespace       : android?.namespace,
-                            classPath       : projectClasses + dependencies.collect { it.absolutePath },
-                            projectClassPath: projectClasses,
-                            resourceApkPath : resourceApk,
+                            project          : p.path,
+                            variant          : variant,
+                            availableVariants: variants,
+                            namespace        : android?.namespace,
+                            classPath        : projectClasses + dependencies.collect { it.absolutePath },
+                            projectClassPath : projectClasses,
+                            resourceApkPath  : resourceApk,
                         ])
                         println 'COMPOSE_PREVIEW_INFO_END'
                     }

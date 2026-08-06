@@ -79,19 +79,28 @@ function M.init_script()
   return vim.api.nvim_get_runtime_file('gradle/compose-preview.init.gradle', false)[1]
 end
 
-local function capitalize(word)
-  return word:sub(1, 1):upper() .. word:sub(2)
+function M.command(opts)
+  local cmd = {
+    vim.fs.joinpath(opts.root, 'gradlew'),
+    '--console=plain',
+    '-q',
+    (opts.module or '') .. ':composePreviewInfo',
+    '--init-script',
+    opts.init_script,
+  }
+
+  if opts.variant then
+    table.insert(cmd, '-PcomposePreviewVariant=' .. opts.variant)
+  end
+
+  return cmd
 end
 
-function M.tasks(module, variant)
-  local prefix = module or ''
-  local suffix = capitalize(variant)
-
-  return {
-    prefix .. ':process' .. suffix .. 'Resources',
-    prefix .. ':compile' .. suffix .. 'Kotlin',
-    prefix .. ':composePreviewInfo',
-  }
+function M.describe_variant_error(variant, available)
+  return ('variant %s が見つかりません。利用できる variant: %s'):format(
+    tostring(variant),
+    table.concat(available or {}, ', ')
+  )
 end
 
 function M.build_and_inspect(opts, on_done)
@@ -100,10 +109,12 @@ function M.build_and_inspect(opts, on_done)
     return on_done('Gradle init script が見つかりません')
   end
 
-  local variant = opts.variant or 'debug'
-  local cmd = { vim.fs.joinpath(opts.root, 'gradlew'), '--console=plain', '-q' }
-  vim.list_extend(cmd, M.tasks(opts.module, variant))
-  vim.list_extend(cmd, { '--init-script', init_script, '-PcomposePreviewVariant=' .. variant })
+  local cmd = M.command({
+    root = opts.root,
+    module = opts.module,
+    variant = opts.variant,
+    init_script = init_script,
+  })
 
   vim.system(cmd, { cwd = opts.root, text = true }, function(result)
     vim.schedule(function()
@@ -116,7 +127,12 @@ function M.build_and_inspect(opts, on_done)
         return on_done(err)
       end
 
-      on_done(nil, infos[1], infos)
+      local info = infos[1]
+      if info.error then
+        return on_done(M.describe_variant_error(info.variant, info.availableVariants))
+      end
+
+      on_done(nil, info, infos)
     end)
   end)
 end
