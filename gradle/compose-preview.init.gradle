@@ -71,13 +71,26 @@ gradle.projectsEvaluated {
                             }
                         }
 
-                        def rClassDir = new File(p.buildDir, "intermediates/compile_and_runtime_not_namespaced_r_class_jar/${variant}")
-                        if (rClassDir.isDirectory()) {
-                            rClassDir.eachFileRecurse { f ->
-                                if (f.name == 'R.jar') {
-                                    projectClasses << f.absolutePath
+                        def rClassJar = null
+                        [
+                            "intermediates/compile_and_runtime_r_class_jar/${variant}",
+                            "intermediates/compile_and_runtime_not_namespaced_r_class_jar/${variant}",
+                            "intermediates/compile_r_class_jar/${variant}",
+                        ].each { relative ->
+                            if (rClassJar != null) {
+                                return
+                            }
+                            def dir = new File(p.buildDir, relative)
+                            if (dir.isDirectory()) {
+                                dir.eachFileRecurse { f ->
+                                    if (rClassJar == null && f.name == 'R.jar') {
+                                        rClassJar = f.absolutePath
+                                    }
                                 }
                             }
+                        }
+                        if (rClassJar != null) {
+                            projectClasses << rClassJar
                         }
 
                         def resourceApk = null

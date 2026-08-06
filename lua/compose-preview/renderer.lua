@@ -57,6 +57,15 @@ function M.find_java()
     ('Java %d or newer not found. set opts.java to an absolute path to java'):format(M.MINIMUM_JAVA_VERSION)
 end
 
+function M.java_home(java_path)
+  if not java_path then
+    return nil
+  end
+
+  local home = java_path:match('^(.*)/bin/java$')
+  return home
+end
+
 function M.command(opts)
   return { opts.java, '-cp', opts.classpath, M.MAIN_CLASS, opts.settings_path }
 end

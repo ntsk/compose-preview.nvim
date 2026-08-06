@@ -98,6 +98,24 @@ function M.command(opts)
   return cmd
 end
 
+local JVM_VERSION_PATTERNS = {
+  'requires at least JVM runtime version',
+  'using a Java %d+ or newer JVM',
+  'Unsupported class file major version',
+}
+
+function M.needs_newer_jvm(result)
+  local combined = (result.stderr or '') .. '\n' .. (result.stdout or '')
+
+  for _, pattern in ipairs(JVM_VERSION_PATTERNS) do
+    if combined:find(pattern) then
+      return true
+    end
+  end
+
+  return false
+end
+
 function M.first_error_line(result)
   local combined = (result.stderr or '') .. '\n' .. (result.stdout or '')
 
@@ -138,32 +156,58 @@ function M.build_and_inspect(opts, on_done)
     init_script = init_script,
   })
 
-  log.info('running: ' .. table.concat(cmd, ' '))
+  local function run(java_home, on_result)
+    local system_opts = { cwd = opts.root, text = true }
+    if java_home then
+      system_opts.env = { JAVA_HOME = java_home }
+    end
 
-  vim.system(cmd, { cwd = opts.root, text = true }, function(result)
-    vim.schedule(function()
-      if result.code ~= 0 then
-        log.error(('Gradle exited %d\n--- stderr ---\n%s\n--- stdout ---\n%s'):format(
-          result.code,
-          result.stderr or '',
-          result.stdout or ''
-        ))
-        return on_done(('Gradle failed (exit %d): %s'):format(result.code, M.first_error_line(result)))
-      end
+    log.info(('running: %s%s'):format(
+      java_home and ('JAVA_HOME=' .. java_home .. ' ') or '',
+      table.concat(cmd, ' ')
+    ))
 
-      local infos, err = M.parse_info(result.stdout or '')
-      if not infos then
-        log.error(('could not parse Gradle output\n--- stdout ---\n%s'):format(result.stdout or ''))
-        return on_done(err)
-      end
-
-      local info = infos[1]
-      if info.error then
-        return on_done(M.describe_variant_error(info.variant, info.availableVariants))
-      end
-
-      on_done(nil, info, infos)
+    vim.system(cmd, system_opts, function(result)
+      vim.schedule(function()
+        on_result(result)
+      end)
     end)
+  end
+
+  local function handle(result, retried)
+    if result.code ~= 0 then
+      log.error(('Gradle exited %d\n--- stderr ---\n%s\n--- stdout ---\n%s'):format(
+        result.code,
+        result.stderr or '',
+        result.stdout or ''
+      ))
+
+      if not retried and M.needs_newer_jvm(result) and opts.fallback_java_home then
+        log.info('retrying with JAVA_HOME=' .. opts.fallback_java_home)
+        return run(opts.fallback_java_home, function(retry_result)
+          handle(retry_result, true)
+        end)
+      end
+
+      return on_done(('Gradle failed (exit %d): %s'):format(result.code, M.first_error_line(result)))
+    end
+
+    local infos, err = M.parse_info(result.stdout or '')
+    if not infos then
+      log.error(('could not parse Gradle output\n--- stdout ---\n%s'):format(result.stdout or ''))
+      return on_done(err)
+    end
+
+    local info = infos[1]
+    if info.error then
+      return on_done(M.describe_variant_error(info.variant, info.availableVariants))
+    end
+
+    on_done(nil, info, infos)
+  end
+
+  run(opts.java_home, function(result)
+    handle(result, opts.java_home ~= nil)
   end)
 end
 
