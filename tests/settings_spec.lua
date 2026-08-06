@@ -70,6 +70,26 @@ describe('settings.build', function()
     assert.are.equal('com.example.app.FooKt.A_1', result.screenshots[3].previewId)
   end)
 
+  it('passes method_params through as methodParams', function()
+    local result = settings.build(opts({
+      {
+        name = 'X',
+        method_fqn = 'com.example.app.FooKt.Greeting',
+        line = 1,
+        params = {},
+        method_params = { { provider = 'com.example.P', limit = '3' } },
+      },
+    }))
+
+    assert.are.same({ { provider = 'com.example.P', limit = '3' } }, result.screenshots[1].methodParams)
+  end)
+
+  it('omits methodParams when the preview takes no parameters', function()
+    local result = settings.build(opts({ preview('com.example.app.FooKt.Greeting') }))
+
+    assert.is_nil(result.screenshots[1].methodParams)
+  end)
+
   it('encodes classPath as a JSON array', function()
     local encoded = vim.json.encode(settings.build(opts({ preview('com.example.app.FooKt.Greeting') })))
 
