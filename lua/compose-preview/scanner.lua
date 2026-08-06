@@ -104,6 +104,111 @@ local function function_name_node(declaration)
   end
 end
 
+local function imports(root, source)
+  local by_simple_name = {}
+
+  for child in root:iter_children() do
+    if child:type() == 'import_list' then
+      for header in child:iter_children() do
+        if header:type() == 'import_header' then
+          for part in header:iter_children() do
+            if part:type() == 'identifier' then
+              local fqn = text(part, source)
+              by_simple_name[fqn:match('([^.]+)$')] = fqn
+            end
+          end
+        end
+      end
+    end
+  end
+
+  return by_simple_name
+end
+
+local function provider_reference(value_arguments, source)
+  if not value_arguments then
+    return nil
+  end
+
+  for argument in value_arguments:iter_children() do
+    if argument:type() == 'value_argument' then
+      for child in argument:iter_children() do
+        local kind = child:type()
+        if kind == 'callable_reference' or kind == 'navigation_expression' then
+          local reference = text(child, source)
+          if reference:match('::%s*class%s*$') then
+            return (reference:gsub('%s*::%s*class%s*$', ''))
+          end
+        end
+      end
+    end
+  end
+end
+
+local function resolve_provider(reference, context)
+  if not reference or reference == '' then
+    return nil
+  end
+
+  if reference:find('%.') then
+    return reference
+  end
+
+  local imported = context.imports[reference]
+  if imported then
+    return imported
+  end
+
+  if context.package then
+    return context.package .. '.' .. reference
+  end
+
+  return reference
+end
+
+local function preview_parameter(annotation, source, context)
+  local name, value_arguments = annotation_parts(annotation, source)
+  if name ~= 'PreviewParameter' then
+    return nil
+  end
+
+  local provider = resolve_provider(provider_reference(value_arguments, source), context)
+  if not provider then
+    return nil
+  end
+
+  local entry = { provider = provider }
+  local arguments = parse_arguments(value_arguments, source)
+  if arguments.limit then
+    entry.limit = arguments.limit
+  end
+
+  return entry
+end
+
+local function method_params(declaration, source, context)
+  local found = {}
+
+  for child in declaration:iter_children() do
+    if child:type() == 'function_value_parameters' then
+      for node in child:iter_children() do
+        if node:type() == 'parameter_modifiers' then
+          for modifier in node:iter_children() do
+            if modifier:type() == 'annotation' then
+              local entry = preview_parameter(modifier, source, context)
+              if entry then
+                table.insert(found, entry)
+              end
+            end
+          end
+        end
+      end
+    end
+  end
+
+  return found
+end
+
 local function package_name(root, source)
   for child in root:iter_children() do
     if child:type() == 'package_header' then
@@ -128,6 +233,7 @@ function M.scan(source, filename)
   local prefix = package_name(root, source)
   local class_name = file_class_name(filename)
   local qualifier = prefix and (prefix .. '.' .. class_name) or class_name
+  local context = { package = prefix, imports = imports(root, source) }
 
   local previews = {}
   for child in root:iter_children() do
@@ -135,12 +241,14 @@ function M.scan(source, filename)
       local name_node = function_name_node(child)
       if name_node then
         local name = text(name_node, source)
+        local parameters = method_params(child, source, context)
         for _, params in ipairs(preview_annotations(child, source)) do
           table.insert(previews, {
             name = name,
             method_fqn = qualifier .. '.' .. name,
             line = name_node:start() + 1,
             params = params,
+            method_params = parameters,
           })
         end
       end

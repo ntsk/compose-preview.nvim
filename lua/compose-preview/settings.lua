@@ -27,11 +27,17 @@ local function screenshots(previews)
         :format(preview.method_fqn, table.concat(dropped, ', ')))
     end
 
-    table.insert(result, {
+    local screenshot = {
       methodFQN = preview.method_fqn,
       previewId = ids[index],
       previewParams = resolved,
-    })
+    }
+
+    if preview.method_params and #preview.method_params > 0 then
+      screenshot.methodParams = preview.method_params
+    end
+
+    table.insert(result, screenshot)
   end
 
   return result
