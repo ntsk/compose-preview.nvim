@@ -1,3 +1,5 @@
+local log = require('compose-preview.log')
+
 local M = {}
 
 local BEGIN_MARKER = 'COMPOSE_PREVIEW_INFO_BEGIN'
@@ -96,6 +98,26 @@ function M.command(opts)
   return cmd
 end
 
+function M.first_error_line(result)
+  local combined = (result.stderr or '') .. '\n' .. (result.stdout or '')
+
+  for line in combined:gmatch('[^\n]+') do
+    local trimmed = vim.trim(line)
+    if trimmed:match('^%*?%s*What went wrong') or trimmed:match('^FAILURE:') or trimmed:match('^error:') then
+      return trimmed
+    end
+  end
+
+  for line in combined:gmatch('[^\n]+') do
+    local trimmed = vim.trim(line)
+    if trimmed ~= '' then
+      return trimmed
+    end
+  end
+
+  return 'see :ComposePreviewLog for details'
+end
+
 function M.describe_variant_error(variant, available)
   return ('variant %s not found. available variants: %s'):format(
     tostring(variant),
@@ -116,14 +138,22 @@ function M.build_and_inspect(opts, on_done)
     init_script = init_script,
   })
 
+  log.info('running: ' .. table.concat(cmd, ' '))
+
   vim.system(cmd, { cwd = opts.root, text = true }, function(result)
     vim.schedule(function()
       if result.code ~= 0 then
-        return on_done(('Gradle failed (exit %d):\n%s'):format(result.code, result.stderr or ''))
+        log.error(('Gradle exited %d\n--- stderr ---\n%s\n--- stdout ---\n%s'):format(
+          result.code,
+          result.stderr or '',
+          result.stdout or ''
+        ))
+        return on_done(('Gradle failed (exit %d): %s'):format(result.code, M.first_error_line(result)))
       end
 
       local infos, err = M.parse_info(result.stdout or '')
       if not infos then
+        log.error(('could not parse Gradle output\n--- stdout ---\n%s'):format(result.stdout or ''))
         return on_done(err)
       end
 

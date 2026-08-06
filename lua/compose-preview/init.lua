@@ -1,5 +1,6 @@
 local gradle = require('compose-preview.gradle')
 local html = require('compose-preview.html')
+local log = require('compose-preview.log')
 local renderer = require('compose-preview.renderer')
 local scanner = require('compose-preview.scanner')
 local settings = require('compose-preview.settings')
@@ -22,12 +23,18 @@ function M.setup(opts)
   M.config = vim.tbl_deep_extend('force', M.config, opts or {})
 end
 
+function M.log_path()
+  return log.default_path()
+end
+
 local function notify(message, level)
+  log.write(level == vim.log.levels.ERROR and 'ERROR' or 'INFO', message)
   vim.notify('[compose-preview] ' .. message, level or vim.log.levels.INFO)
 end
 
 local function fail(message)
   notify(message, vim.log.levels.ERROR)
+  vim.notify('[compose-preview] see :ComposePreviewLog for the full output', vim.log.levels.WARN)
 end
 
 local function work_dir(root, module)
@@ -111,6 +118,9 @@ function M.open(bufnr)
   dirs.page = vim.fs.joinpath(dirs.work, 'index.html')
 
   local title = vim.fs.basename(file)
+
+  log.info(('open: file=%s root=%s module=%s previews=%d variant=%s')
+    :format(file, root, module, #previews, tostring(M.config.variant)))
 
   notify('preparing toolchain...')
   toolchain.install({ cache_dir = M.config.cache_dir }, function(install_err, paths)
