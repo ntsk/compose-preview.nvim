@@ -6,7 +6,7 @@ local function preview(fqn, params, name)
 end
 
 describe('settings.preview_ids', function()
-  it('screenshots の previewId と同じ順序・同じ値を返す', function()
+  it('matches the previewId order and values used in screenshots', function()
     local previews = {
       preview('com.example.FooKt.A'),
       preview('com.example.FooKt.A'),
@@ -28,7 +28,7 @@ describe('settings.preview_ids', function()
 end)
 
 describe('view.items', function()
-  it('previewId で結果を突き合わせて画像の相対パスを組み立てる', function()
+  it('matches results by previewId and builds the relative image path', function()
     local previews = { preview('com.example.FooKt.Greeting', {}, 'Greeting') }
     local results = {
       previews = {
@@ -47,21 +47,21 @@ describe('view.items', function()
     assert.are.equal('out/com/example/FooKt/Greeting_0_0.png', items[1].image_src)
   end)
 
-  it('@Preview の name をラベルに使う', function()
+  it('uses the @Preview name as the label', function()
     local previews = { preview('com.example.FooKt.Greeting', { name = 'Dark' }, 'Greeting') }
     local results = { previews = {} }
 
     assert.are.equal('Dark', view.items(previews, results, 'out')[1].label)
   end)
 
-  it('name が無ければ関数名をラベルにする', function()
+  it('falls back to the function name as the label', function()
     local previews = { preview('com.example.FooKt.Greeting', {}, 'Greeting') }
     local results = { previews = {} }
 
     assert.are.equal('Greeting', view.items(previews, results, 'out')[1].label)
   end)
 
-  it('同じ関数の複数 @Preview をそれぞれ別項目にする', function()
+  it('keeps each @Preview on one function as its own item', function()
     local previews = {
       preview('com.example.FooKt.G', { name = 'Light' }, 'G'),
       preview('com.example.FooKt.G', { name = 'Dark' }, 'G'),
@@ -81,7 +81,7 @@ describe('view.items', function()
     assert.are.equal('out/b.png', items[2].image_src)
   end)
 
-  it('対応する結果が無いプレビューは失敗として扱う', function()
+  it('treats a preview with no matching result as failed', function()
     local previews = { preview('com.example.FooKt.Greeting', {}, 'Greeting') }
     local items = view.items(previews, { previews = {} }, 'out')
 
@@ -89,7 +89,7 @@ describe('view.items', function()
     assert.is_string(items[1].error.message)
   end)
 
-  it('レンダリングエラーをそのまま引き継ぐ', function()
+  it('carries the render error through unchanged', function()
     local previews = { preview('com.example.FooKt.Greeting', {}, 'Greeting') }
     local results = {
       previews = {

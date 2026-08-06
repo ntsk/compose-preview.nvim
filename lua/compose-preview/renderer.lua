@@ -54,7 +54,7 @@ function M.find_java()
   end
 
   return nil,
-    ('Java %d 以降が見つかりません。opts.java に java の絶対パスを指定してください'):format(M.MINIMUM_JAVA_VERSION)
+    ('Java %d or newer not found. set opts.java to an absolute path to java'):format(M.MINIMUM_JAVA_VERSION)
 end
 
 function M.command(opts)
@@ -93,7 +93,7 @@ function M.render(opts, on_done)
         if detail == '' then
           detail = ('exit %d'):format(result.code)
         end
-        return on_done(('レンダリングに失敗しました: %s'):format(detail))
+        return on_done(('rendering failed: %s'):format(detail))
       end
 
       local parsed, err = results.parse(raw)
@@ -107,7 +107,7 @@ function M.render(opts, on_done)
 
   if not spawned then
     vim.schedule(function()
-      on_done(('%s を起動できませんでした: %s'):format(java, tostring(spawn_err)))
+      on_done(('failed to start %s: %s'):format(java, tostring(spawn_err)))
     end)
   end
 end

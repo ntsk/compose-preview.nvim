@@ -17,7 +17,7 @@ local function install_fake(dir)
 end
 
 describe('toolchain.artifact_url', function()
-  it('group のドットをスラッシュに変換して Google Maven の URL を組み立てる', function()
+  it('builds a Google Maven URL, turning group dots into slashes', function()
     local url = toolchain.artifact_url('com.android.tools.compose', 'compose-preview-renderer', '0.0.1-alpha16')
 
     assert.are.equal(
@@ -28,18 +28,18 @@ describe('toolchain.artifact_url', function()
   end)
 end)
 
-describe('toolchain の既定バージョン', function()
-  it('layoutlib のクラスは 17.0.0 を使う', function()
+describe('toolchain default versions', function()
+  it('uses 17.0.0 for the layoutlib classes', function()
     assert.are.equal('17.0.0', toolchain.LAYOUTLIB_VERSION)
   end)
 
-  it('layoutlib のデータとリソースは 17.0.1 を使う', function()
+  it('uses 17.0.1 for layoutlib data and resources', function()
     assert.are.equal('17.0.1', toolchain.LAYOUTLIB_DATA_VERSION)
   end)
 end)
 
 describe('toolchain.paths', function()
-  it('レンダラと layoutlib クラスの jar、layoutlib データの展開先を返す', function()
+  it('returns the renderer jar, the layoutlib jar and the layoutlib data directory', function()
     local paths = toolchain.paths({ cache_dir = '/cache' })
 
     assert.are.equal('/cache/compose-preview-renderer-' .. toolchain.RENDERER_VERSION .. '.jar', paths.renderer_jar)
@@ -47,20 +47,20 @@ describe('toolchain.paths', function()
     assert.are.equal('/cache/layoutlib-data-' .. toolchain.LAYOUTLIB_DATA_VERSION, paths.layoutlib_dir)
   end)
 
-  it('framework リソースは layoutlib データ内の data/framework_res.jar を指す', function()
+  it('points framework resources at data/framework_res.jar inside the layoutlib data directory', function()
     local paths = toolchain.paths({ cache_dir = '/cache' })
 
     assert.are.equal(paths.layoutlib_dir .. '/data/framework_res.jar', paths.framework_res_jar)
   end)
 
-  it('バージョンごとに異なるパスへ配置する', function()
+  it('uses a distinct path per version', function()
     local a = toolchain.paths({ cache_dir = '/cache', renderer_version = '0.0.1-alpha16' })
     local b = toolchain.paths({ cache_dir = '/cache', renderer_version = '0.0.1-alpha15' })
 
     assert.are_not.equal(a.renderer_jar, b.renderer_jar)
   end)
 
-  it('レンダラ実行時の -cp はレンダラと layoutlib クラスの両方を含む', function()
+  it('puts both the renderer and the layoutlib classes on -cp', function()
     local paths = toolchain.paths({ cache_dir = '/cache' })
 
     assert.are.equal(paths.renderer_jar .. ':' .. paths.layoutlib_jar, paths.classpath)
@@ -68,11 +68,11 @@ describe('toolchain.paths', function()
 end)
 
 describe('toolchain.is_installed', function()
-  it('何も無ければ false', function()
+  it('is false when nothing is installed', function()
     assert.is_false(toolchain.is_installed({ cache_dir = tmpdir() }))
   end)
 
-  it('layoutlib クラスの jar が欠けていれば false', function()
+  it('is false when the layoutlib jar is missing', function()
     local dir = tmpdir()
     local paths = install_fake(dir)
     vim.fn.delete(paths.layoutlib_jar)
@@ -80,7 +80,7 @@ describe('toolchain.is_installed', function()
     assert.is_false(toolchain.is_installed({ cache_dir = dir }))
   end)
 
-  it('framework_res.jar が欠けていれば false', function()
+  it('is false when framework_res.jar is missing', function()
     local dir = tmpdir()
     local paths = install_fake(dir)
     vim.fn.delete(paths.framework_res_jar)
@@ -88,7 +88,7 @@ describe('toolchain.is_installed', function()
     assert.is_false(toolchain.is_installed({ cache_dir = dir }))
   end)
 
-  it('4つすべて揃っていれば true', function()
+  it('is true once all four artifacts are present', function()
     local dir = tmpdir()
     install_fake(dir)
 
@@ -97,7 +97,7 @@ describe('toolchain.is_installed', function()
 end)
 
 describe('toolchain.install', function()
-  it('インストール済みならダウンロードせず paths を返す', function()
+  it('returns paths without downloading when already installed', function()
     local dir = tmpdir()
     local expected = install_fake(dir)
 

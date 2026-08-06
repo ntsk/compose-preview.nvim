@@ -1,13 +1,13 @@
 local html = require('compose-preview.html')
 
 describe('html.escape', function()
-  it('HTML の特殊文字を実体参照に変換する', function()
+  it('turns HTML special characters into entities', function()
     assert.are.equal('&lt;script&gt;', html.escape('<script>'))
     assert.are.equal('a &amp; b', html.escape('a & b'))
     assert.are.equal('&quot;x&quot;', html.escape('"x"'))
   end)
 
-  it('アンパサンドを二重変換しない', function()
+  it('does not double-escape ampersands', function()
     assert.are.equal('&lt;a&gt; &amp; &lt;b&gt;', html.escape('<a> & <b>'))
   end)
 end)
@@ -20,13 +20,13 @@ describe('html.build', function()
     return html.build(opts)
   end
 
-  it('タイトルを見出しに出す', function()
+  it('shows the title in the heading', function()
     local page = build({})
 
     assert.is_truthy(page:find('Greeting.kt', 1, true))
   end)
 
-  it('成功したプレビューを img として並べる', function()
+  it('lays out successful previews as img elements', function()
     local page = build({
       { name = 'GreetingPreview', ok = true, image_src = 'out/com/example/GreetingPreview_0_0.png' },
     })
@@ -35,7 +35,7 @@ describe('html.build', function()
     assert.is_truthy(page:find('GreetingPreview', 1, true))
   end)
 
-  it('失敗したプレビューはエラーメッセージを出し img を出さない', function()
+  it('shows an error message and no img for failed previews', function()
     local page = build({
       {
         name = 'BrokenPreview',
@@ -49,7 +49,7 @@ describe('html.build', function()
     assert.is_nil(page:find('<img', 1, true))
   end)
 
-  it('プレビュー名の HTML をエスケープする', function()
+  it('escapes HTML in preview names', function()
     local page = build({
       { name = '<script>alert(1)</script>', ok = true, image_src = 'a.png' },
     })
@@ -58,7 +58,7 @@ describe('html.build', function()
     assert.is_truthy(page:find('&lt;script&gt;', 1, true))
   end)
 
-  it('エラーメッセージの HTML もエスケープする', function()
+  it('escapes HTML in error messages too', function()
     local page = build({
       { name = 'X', ok = false, error = { message = '<img src=x onerror=alert(1)>' } },
     })
@@ -66,19 +66,19 @@ describe('html.build', function()
     assert.is_nil(page:find('<img src=x', 1, true))
   end)
 
-  it('プレビューが 0 件ならその旨を出す', function()
+  it('says so when there are no previews', function()
     local page = build({})
 
     assert.is_truthy(page:find('@Preview', 1, true))
   end)
 
-  it('全体エラーがあれば目立つ位置に出す', function()
+  it('surfaces a global error prominently', function()
     local page = build({}, { global_error = 'Layoutlib not found' })
 
     assert.is_truthy(page:find('Layoutlib not found', 1, true))
   end)
 
-  it('ラベルがあればプレビュー名の代わりに使う', function()
+  it('prefers the label over the preview name', function()
     local page = build({
       { name = 'GreetingSizePreview', label = 'Wide', ok = true, image_src = 'a.png' },
     })
@@ -86,7 +86,7 @@ describe('html.build', function()
     assert.is_truthy(page:find('Wide', 1, true))
   end)
 
-  it('自動リロード用のトークンを埋め込む', function()
+  it('embeds a token for auto reload', function()
     local page = build({}, { token = 'abc123' })
 
     assert.is_truthy(page:find('abc123', 1, true))

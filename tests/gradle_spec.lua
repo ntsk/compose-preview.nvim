@@ -12,7 +12,7 @@ local function touch(path)
 end
 
 describe('gradle.parse_info', function()
-  it('マーカーに挟まれた JSON を取り出す', function()
+  it('extracts the JSON between the markers', function()
     local infos = gradle.parse_info(table.concat({
       'Starting a Gradle Daemon',
       'COMPOSE_PREVIEW_INFO_BEGIN',
@@ -28,7 +28,7 @@ describe('gradle.parse_info', function()
     assert.are.equal('/r.ap_', infos[1].resourceApkPath)
   end)
 
-  it('複数モジュールのブロックをすべて取り出す', function()
+  it('extracts a block for every module', function()
     local infos = gradle.parse_info(table.concat({
       'COMPOSE_PREVIEW_INFO_BEGIN',
       '{"project":":app","namespace":"com.example.app"}',
@@ -43,21 +43,21 @@ describe('gradle.parse_info', function()
     assert.are.equal(':core', infos[2].project)
   end)
 
-  it('マーカーが無ければ nil とエラーを返す', function()
+  it('returns nil and an error when the markers are absent', function()
     local infos, err = gradle.parse_info('BUILD FAILED\nSomething went wrong')
 
     assert.is_nil(infos)
     assert.is_string(err)
   end)
 
-  it('JSON が壊れていれば nil とエラーを返す', function()
+  it('returns nil and an error when the JSON is broken', function()
     local infos, err = gradle.parse_info('COMPOSE_PREVIEW_INFO_BEGIN\n{ broken\nCOMPOSE_PREVIEW_INFO_END')
 
     assert.is_nil(infos)
     assert.is_string(err)
   end)
 
-  it('JSON の null を vim.NIL のまま漏らさない', function()
+  it('never leaks JSON null as vim.NIL', function()
     local infos = gradle.parse_info('COMPOSE_PREVIEW_INFO_BEGIN\n{"project":":app","resourceApkPath":null}\nCOMPOSE_PREVIEW_INFO_END')
 
     assert.is_nil(infos[1].resourceApkPath)
@@ -73,7 +73,7 @@ describe('gradle.command', function()
     }, extra or {})
   end
 
-  it('composePreviewInfo だけを実行する', function()
+  it('runs only composePreviewInfo', function()
     local cmd = gradle.command(opts())
 
     assert.are.equal('/proj/gradlew', cmd[1])
@@ -82,19 +82,19 @@ describe('gradle.command', function()
     assert.is_truthy(vim.tbl_contains(cmd, '/plugin/init.gradle'))
   end)
 
-  it('variant 未指定なら composePreviewVariant を渡さない', function()
+  it('omits composePreviewVariant when no variant is given', function()
     for _, arg in ipairs(gradle.command(opts())) do
       assert.is_nil(arg:match('composePreviewVariant'))
     end
   end)
 
-  it('variant 指定時はプロパティとして渡す', function()
+  it('passes the variant as a Gradle property', function()
     local cmd = gradle.command(opts({ variant = 'devDebug' }))
 
     assert.is_truthy(vim.tbl_contains(cmd, '-PcomposePreviewVariant=devDebug'))
   end)
 
-  it('ルートモジュールならコロンだけのタスク名にする', function()
+  it('uses a bare colon task name for the root module', function()
     local cmd = gradle.command(opts({ module = '' }))
 
     assert.is_truthy(vim.tbl_contains(cmd, ':composePreviewInfo'))
@@ -102,7 +102,7 @@ describe('gradle.command', function()
 end)
 
 describe('gradle.describe_variant_error', function()
-  it('候補バリアントを並べて示す', function()
+  it('lists the candidate variants', function()
     local message = gradle.describe_variant_error('debug', { 'devDebug', 'productionDebug' })
 
     assert.is_truthy(message:find('debug', 1, true))
@@ -112,7 +112,7 @@ describe('gradle.describe_variant_error', function()
 end)
 
 describe('gradle.find_project_root', function()
-  it('gradlew を持つ最も近い祖先を返す', function()
+  it('returns the nearest ancestor holding gradlew', function()
     local root = tmpdir()
     touch(root .. '/gradlew')
     touch(root .. '/app/src/main/java/Foo.kt')
@@ -120,7 +120,7 @@ describe('gradle.find_project_root', function()
     assert.are.equal(root, gradle.find_project_root(root .. '/app/src/main/java/Foo.kt'))
   end)
 
-  it('gradlew が無ければ nil を返す', function()
+  it('returns nil when there is no gradlew', function()
     local dir = tmpdir()
     touch(dir .. '/app/Foo.kt')
 
@@ -129,7 +129,7 @@ describe('gradle.find_project_root', function()
 end)
 
 describe('gradle.find_module', function()
-  it('build.gradle.kts を持つ最も近い祖先から Gradle パスを組み立てる', function()
+  it('builds the Gradle path from the nearest ancestor holding build.gradle.kts', function()
     local root = tmpdir()
     touch(root .. '/gradlew')
     touch(root .. '/app/build.gradle.kts')
@@ -138,7 +138,7 @@ describe('gradle.find_module', function()
     assert.are.equal(':app', gradle.find_module(root, root .. '/app/src/main/java/Foo.kt'))
   end)
 
-  it('ネストしたモジュールはコロン区切りにする', function()
+  it('joins nested modules with colons', function()
     local root = tmpdir()
     touch(root .. '/gradlew')
     touch(root .. '/feature/home/build.gradle')
@@ -147,7 +147,7 @@ describe('gradle.find_module', function()
     assert.are.equal(':feature:home', gradle.find_module(root, root .. '/feature/home/src/Foo.kt'))
   end)
 
-  it('ルートプロジェクト直下のソースなら空の Gradle パスを返す', function()
+  it('returns an empty Gradle path for sources directly under the root project', function()
     local root = tmpdir()
     touch(root .. '/gradlew')
     touch(root .. '/build.gradle.kts')
@@ -156,7 +156,7 @@ describe('gradle.find_module', function()
     assert.are.equal('', gradle.find_module(root, root .. '/src/Foo.kt'))
   end)
 
-  it('build.gradle が見つからなければ nil を返す', function()
+  it('returns nil when no build.gradle is found', function()
     local root = tmpdir()
     touch(root .. '/gradlew')
     touch(root .. '/app/src/Foo.kt')

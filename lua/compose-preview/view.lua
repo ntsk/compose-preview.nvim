@@ -26,7 +26,7 @@ function M.items(previews, results, output_dir_name)
       item.image_src = output_dir_name .. '/' .. result.image_path
     else
       item.ok = false
-      item.error = result and result.error or { message = 'レンダリング結果がありません' }
+      item.error = result and result.error or { message = 'no render result' }
     end
 
     table.insert(items, item)

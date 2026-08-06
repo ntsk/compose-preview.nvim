@@ -19,7 +19,7 @@ local function preview(fqn, params)
 end
 
 describe('settings.build', function()
-  it('レンダラが要求するフィールド名にマッピングする', function()
+  it('maps to the field names the renderer expects', function()
     local result = settings.build(opts({ preview('com.example.app.FooKt.Greeting') }))
 
     assert.are.equal('/cache/layoutlib', result.layoutlibPath)
@@ -32,7 +32,7 @@ describe('settings.build', function()
     assert.are.same({ '/work/classes' }, result.projectClassPath)
   end)
 
-  it('previews を screenshots に変換する', function()
+  it('converts previews into screenshots', function()
     local result = settings.build(opts({
       preview('com.example.app.FooKt.Greeting', { showBackground = 'true' }),
     }))
@@ -42,13 +42,13 @@ describe('settings.build', function()
     assert.are.same({ showBackground = 'true' }, result.screenshots[1].previewParams)
   end)
 
-  it('previewId を methodFQN と連番から組み立てる', function()
+  it('builds previewId from methodFQN and an index', function()
     local result = settings.build(opts({ preview('com.example.app.FooKt.Greeting') }))
 
     assert.are.equal('com.example.app.FooKt.Greeting_0', result.screenshots[1].previewId)
   end)
 
-  it('同一関数の複数 @Preview で previewId が衝突しない', function()
+  it('keeps previewId unique across multiple @Preview on one function', function()
     local result = settings.build(opts({
       preview('com.example.app.FooKt.Greeting', { name = 'Light' }),
       preview('com.example.app.FooKt.Greeting', { name = 'Dark' }),
@@ -58,7 +58,7 @@ describe('settings.build', function()
     assert.are.equal('com.example.app.FooKt.Greeting_1', result.screenshots[2].previewId)
   end)
 
-  it('関数ごとに連番を 0 から振り直す', function()
+  it('restarts the index at 0 for each function', function()
     local result = settings.build(opts({
       preview('com.example.app.FooKt.A'),
       preview('com.example.app.FooKt.B'),
@@ -70,7 +70,7 @@ describe('settings.build', function()
     assert.are.equal('com.example.app.FooKt.A_1', result.screenshots[3].previewId)
   end)
 
-  it('JSON にエンコードしたとき classPath が配列になる', function()
+  it('encodes classPath as a JSON array', function()
     local encoded = vim.json.encode(settings.build(opts({ preview('com.example.app.FooKt.Greeting') })))
 
     assert.is_truthy(encoded:find('"classPath":%["/work/classes","/m2/compose.jar"%]'))

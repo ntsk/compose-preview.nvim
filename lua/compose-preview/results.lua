@@ -39,7 +39,7 @@ function M.parse(json)
     return nil, tostring(decoded)
   end
   if type(decoded) ~= 'table' then
-    return nil, 'results.json のトップレベルがオブジェクトではありません'
+    return nil, 'top level of results.json is not an object'
   end
 
   local previews = {}

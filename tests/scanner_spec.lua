@@ -1,7 +1,7 @@
 local scanner = require('compose-preview.scanner')
 
 describe('scanner.scan', function()
-  it('パッケージとファイル名から methodFQN を組み立てる', function()
+  it('builds methodFQN from package and file name', function()
     local src = [[
 package com.example.app
 
@@ -21,7 +21,7 @@ fun Greeting() {
     assert.are.equal(8, previews[1].line)
   end)
 
-  it('package 宣言が無ければ FQN はファイルクラス名のみになる', function()
+  it('uses only the file class name when there is no package declaration', function()
     local src = [[
 @Preview
 @Composable
@@ -34,7 +34,7 @@ fun Greeting() {
     assert.are.equal('FooKt.Greeting', previews[1].method_fqn)
   end)
 
-  it('@Preview が無い関数は無視する', function()
+  it('ignores functions without @Preview', function()
     local src = [[
 package com.example
 
@@ -48,7 +48,7 @@ fun plain() {
     assert.are.same({}, scanner.scan(src, 'Foo.kt'))
   end)
 
-  it('@Preview の引数を params として取り出す', function()
+  it('extracts @Preview arguments as params', function()
     local src = [[
 package com.example
 
@@ -67,7 +67,7 @@ fun Greeting() {
     }, previews[1].params)
   end)
 
-  it('引数の無い @Preview の params は空テーブルになる', function()
+  it('yields an empty params table for a bare @Preview', function()
     local src = [[
 package com.example
 
@@ -79,7 +79,7 @@ fun Greeting() {
     assert.are.same({}, scanner.scan(src, 'Foo.kt')[1].params)
   end)
 
-  it('複数の @Preview 関数をすべて拾う', function()
+  it('picks up every @Preview function', function()
     local src = [[
 package com.example
 
@@ -104,7 +104,7 @@ fun Second() {
     assert.are.equal('Second', previews[2].name)
   end)
 
-  it('1つの関数に付いた複数の @Preview をそれぞれ別エントリにする', function()
+  it('emits a separate entry per @Preview on one function', function()
     local src = [[
 package com.example
 
@@ -123,7 +123,7 @@ fun Greeting() {
     assert.are.equal('Dark', previews[2].params.name)
   end)
 
-  it('スネークケースを含むファイル名でもファイルクラス名を組み立てる', function()
+  it('builds the file class name for snake_case file names', function()
     local src = [[
 @Preview
 @Composable

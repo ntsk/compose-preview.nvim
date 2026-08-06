@@ -63,7 +63,7 @@ local function run(cmd, on_done)
   vim.system(cmd, { text = true }, function(result)
     vim.schedule(function()
       if result.code ~= 0 then
-        on_done(('%s の実行に失敗しました (exit %d): %s'):format(cmd[1], result.code, result.stderr or ''))
+        on_done(('%s failed (exit %d): %s'):format(cmd[1], result.code, result.stderr or ''))
       else
         on_done(nil)
       end
@@ -73,7 +73,7 @@ end
 
 local function download(url, dest, on_done)
   run({ 'curl', '-fsSL', '--create-dirs', '-o', dest, url }, function(err)
-    on_done(err and ('%s のダウンロードに失敗しました: %s'):format(url, err) or nil)
+    on_done(err and ('failed to download %s: %s'):format(url, err) or nil)
   end)
 end
 

@@ -1,7 +1,7 @@
 local results = require('compose-preview.results')
 
 describe('results.parse', function()
-  it('成功したレンダリングを image_path 付きで返す', function()
+  it('returns successful renders with image_path', function()
     local parsed = results.parse([[
       {
         "globalError": null,
@@ -27,7 +27,7 @@ describe('results.parse', function()
     assert.is_nil(preview.error)
   end)
 
-  it('失敗したレンダリングのエラーを正規化する', function()
+  it('normalizes errors from failed renders', function()
     local parsed = results.parse([[
       {
         "globalError": null,
@@ -58,7 +58,7 @@ describe('results.parse', function()
     assert.are.same({ 'com.example.Missing' }, preview.error.missing_classes)
   end)
 
-  it('globalError を取り出す', function()
+  it('extracts globalError', function()
     local parsed = results.parse([[
       { "globalError": "Layoutlib not found", "screenshotResults": [] }
     ]])
@@ -67,13 +67,13 @@ describe('results.parse', function()
     assert.are.same({}, parsed.previews)
   end)
 
-  it('screenshotResults が欠けていても空リストを返す', function()
+  it('returns an empty list when screenshotResults is missing', function()
     local parsed = results.parse([[ { "globalError": null } ]])
 
     assert.are.same({}, parsed.previews)
   end)
 
-  it('JSON の null を vim.NIL のまま漏らさない', function()
+  it('never leaks JSON null as vim.NIL', function()
     local parsed = results.parse([[
       {
         "globalError": null,
@@ -93,7 +93,7 @@ describe('results.parse', function()
     assert.are_not.equal(vim.NIL, parsed.previews[1].error)
   end)
 
-  it('壊れた JSON では nil とエラーメッセージを返す', function()
+  it('returns nil and an error message for broken JSON', function()
     local parsed, err = results.parse('{ not json')
 
     assert.is_nil(parsed)

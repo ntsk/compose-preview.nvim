@@ -49,7 +49,7 @@ gradle.projectsEvaluated {
                                 project          : p.path,
                                 variant          : variant,
                                 availableVariants: variants,
-                                error            : "variant '${variant}' が見つかりません",
+                                error            : "variant '${variant}' not found",
                             ])
                             println 'COMPOSE_PREVIEW_INFO_END'
                             return

@@ -132,7 +132,7 @@ local SCRIPT = [[
 ]]
 
 local function render_card(item)
-  local title = M.escape(item.label or item.name or '(名前なし)')
+  local title = M.escape(item.label or item.name or '(unnamed)')
   local body
 
   if item.ok and item.image_src then
@@ -140,12 +140,12 @@ local function render_card(item)
   else
     local err = item.error or {}
     local parts = { '<div class="error">' }
-    table.insert(parts, ('<strong>%s</strong>'):format(M.escape(err.message or 'レンダリングに失敗しました')))
+    table.insert(parts, ('<strong>%s</strong>'):format(M.escape(err.message or 'rendering failed')))
     if err.stack_trace and err.stack_trace ~= '' then
       table.insert(parts, ('<pre>%s</pre>'):format(M.escape(err.stack_trace)))
     end
     if err.missing_classes and #err.missing_classes > 0 then
-      table.insert(parts, ('<pre>見つからないクラス:\n%s</pre>'):format(M.escape(table.concat(err.missing_classes, '\n'))))
+      table.insert(parts, ('<pre>Missing classes:\n%s</pre>'):format(M.escape(table.concat(err.missing_classes, '\n'))))
     end
     table.insert(parts, '</div>')
     body = table.concat(parts)
@@ -163,7 +163,7 @@ function M.build(opts)
   end
 
   add('<!doctype html>')
-  add('<html lang="ja"><head><meta charset="utf-8">')
+  add('<html lang="en"><head><meta charset="utf-8">')
   add(('<title>%s - Compose Preview</title>'):format(M.escape(opts.title or 'Compose Preview')))
   add('<meta name="viewport" content="width=device-width, initial-scale=1">')
   add(('<style>%s</style>'):format(STYLE))
@@ -171,7 +171,7 @@ function M.build(opts)
 
   add('<header>')
   add(('<h1>%s</h1>'):format(M.escape(opts.title or 'Compose Preview')))
-  add(('<span class="meta">%d 件</span>'):format(#items))
+  add(('<span class="meta">%d previews</span>'):format(#items))
   if opts.generated_at then
     add(('<span class="meta">%s</span>'):format(M.escape(opts.generated_at)))
   end
@@ -182,7 +182,7 @@ function M.build(opts)
   end
 
   if #items == 0 then
-    add('<p class="empty">表示できる @Preview がありません。</p>')
+    add('<p class="empty">No @Preview to show.</p>')
   else
     add('<div class="grid">')
     for _, item in ipairs(items) do

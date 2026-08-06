@@ -72,9 +72,9 @@ local function publish(previews, results, dirs, title)
   end
 
   if failed > 0 then
-    notify(('%d 件中 %d 件が失敗しました'):format(#items, failed), vim.log.levels.WARN)
+    notify(('%d of %d previews failed'):format(failed, #items), vim.log.levels.WARN)
   else
-    notify(('%d 件を描画しました'):format(#items))
+    notify(('rendered %d previews'):format(#items))
   end
 
   open_in_browser(dirs.page)
@@ -85,23 +85,23 @@ function M.open(bufnr)
   local file = vim.api.nvim_buf_get_name(bufnr)
 
   if not file:match('%.kt$') then
-    return fail('Kotlin のファイルではありません')
+    return fail('not a Kotlin file')
   end
 
   local source = table.concat(vim.api.nvim_buf_get_lines(bufnr, 0, -1, false), '\n')
   local previews = scanner.scan(source, file)
   if #previews == 0 then
-    return fail('このファイルに @Preview がありません')
+    return fail('no @Preview found in this file')
   end
 
   local root = gradle.find_project_root(file)
   if not root then
-    return fail('gradlew が見つかりません')
+    return fail('gradlew not found')
   end
 
   local module = gradle.find_module(root, file)
   if not module then
-    return fail('build.gradle が見つかりません')
+    return fail('build.gradle not found')
   end
 
   local dirs = {}
@@ -112,13 +112,13 @@ function M.open(bufnr)
 
   local title = vim.fs.basename(file)
 
-  notify('ツールチェーンを準備しています…')
+  notify('preparing toolchain...')
   toolchain.install({ cache_dir = M.config.cache_dir }, function(install_err, paths)
     if install_err then
       return fail(install_err)
     end
 
-    notify(('%s をビルドしています…'):format(module == '' and ':' or module))
+    notify(('building %s...'):format(module == '' and ':' or module))
     gradle.build_and_inspect({ root = root, module = module, variant = M.config.variant }, function(gradle_err, info)
       if gradle_err then
         return fail(gradle_err)
@@ -146,7 +146,7 @@ function M.open(bufnr)
         }))
       )
 
-      notify(('%d 件を描画しています…'):format(#previews))
+      notify(('rendering %d previews...'):format(#previews))
       renderer.render({
         java = M.config.java,
         classpath = paths.classpath,

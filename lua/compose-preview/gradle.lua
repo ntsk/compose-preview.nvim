@@ -29,7 +29,7 @@ function M.parse_info(stdout)
     elseif trimmed == END_MARKER and inside then
       local ok, decoded = pcall(vim.json.decode, table.concat(block, '\n'))
       if not ok then
-        return nil, ('Gradle が出力した JSON を解析できません: %s'):format(tostring(decoded))
+        return nil, ('failed to parse JSON emitted by Gradle: %s'):format(tostring(decoded))
       end
       table.insert(infos, denil(decoded))
       inside = false
@@ -39,7 +39,7 @@ function M.parse_info(stdout)
   end
 
   if #infos == 0 then
-    return nil, 'Gradle の出力にプレビュー情報が含まれていません'
+    return nil, 'Gradle output contains no preview info'
   end
 
   return infos
@@ -97,7 +97,7 @@ function M.command(opts)
 end
 
 function M.describe_variant_error(variant, available)
-  return ('variant %s が見つかりません。利用できる variant: %s'):format(
+  return ('variant %s not found. available variants: %s'):format(
     tostring(variant),
     table.concat(available or {}, ', ')
   )
@@ -106,7 +106,7 @@ end
 function M.build_and_inspect(opts, on_done)
   local init_script = opts.init_script or M.init_script()
   if not init_script then
-    return on_done('Gradle init script が見つかりません')
+    return on_done('Gradle init script not found')
   end
 
   local cmd = M.command({
@@ -119,7 +119,7 @@ function M.build_and_inspect(opts, on_done)
   vim.system(cmd, { cwd = opts.root, text = true }, function(result)
     vim.schedule(function()
       if result.code ~= 0 then
-        return on_done(('Gradle の実行に失敗しました (exit %d):\n%s'):format(result.code, result.stderr or ''))
+        return on_done(('Gradle failed (exit %d):\n%s'):format(result.code, result.stderr or ''))
       end
 
       local infos, err = M.parse_info(result.stdout or '')
