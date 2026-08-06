@@ -1,3 +1,6 @@
+local log = require('compose-preview.log')
+local params = require('compose-preview.params')
+
 local M = {}
 
 function M.preview_ids(previews)
@@ -18,10 +21,16 @@ local function screenshots(previews)
   local result = {}
 
   for index, preview in ipairs(previews) do
+    local resolved, dropped = params.normalize(preview.params)
+    if #dropped > 0 then
+      log.write('WARN', ('%s: dropped unresolvable @Preview attributes: %s')
+        :format(preview.method_fqn, table.concat(dropped, ', ')))
+    end
+
     table.insert(result, {
       methodFQN = preview.method_fqn,
       previewId = ids[index],
-      previewParams = preview.params or {},
+      previewParams = resolved,
     })
   end
 
