@@ -1,4 +1,3 @@
-local log = require('compose-preview.log')
 local params = require('compose-preview.params')
 
 local M = {}
@@ -19,14 +18,12 @@ end
 local function screenshots(previews)
   local ids = M.preview_ids(previews)
   local result = {}
+  local dropped = {}
 
   for index, preview in ipairs(previews) do
-    local resolved, dropped = params.normalize(preview.params)
-    if #dropped > 0 then
-      log.write(
-        'WARN',
-        ('%s: dropped unresolvable @Preview attributes: %s'):format(preview.method_fqn, table.concat(dropped, ', '))
-      )
+    local resolved, unresolvable = params.normalize(preview.params)
+    if #unresolvable > 0 then
+      table.insert(dropped, { method_fqn = preview.method_fqn, attributes = unresolvable })
     end
 
     local screenshot = {
@@ -42,10 +39,12 @@ local function screenshots(previews)
     table.insert(result, screenshot)
   end
 
-  return result
+  return result, dropped
 end
 
 function M.build(opts)
+  local built, dropped = screenshots(opts.previews)
+
   return {
     layoutlibPath = opts.layoutlib_path,
     outputFolder = opts.output_dir,
@@ -55,8 +54,9 @@ function M.build(opts)
     resourceApkPath = opts.resource_apk_path,
     classPath = opts.class_path,
     projectClassPath = opts.project_class_path,
-    screenshots = screenshots(opts.previews),
-  }
+    screenshots = built,
+  },
+    dropped
 end
 
 return M

@@ -90,6 +90,26 @@ describe('settings.build', function()
     assert.is_nil(result.screenshots[1].methodParams)
   end)
 
+  it('reports attributes it could not resolve instead of logging them', function()
+    local result, dropped = settings.build(opts({
+      {
+        name = 'X',
+        method_fqn = 'com.example.app.FooKt.Greeting',
+        line = 1,
+        params = { uiMode = 'MyConstants.NIGHT', name = 'Dark' },
+      },
+    }))
+
+    assert.is_nil(result.screenshots[1].previewParams.uiMode)
+    assert.are.same({ { method_fqn = 'com.example.app.FooKt.Greeting', attributes = { 'uiMode' } } }, dropped)
+  end)
+
+  it('reports nothing dropped when every attribute resolves', function()
+    local _, dropped = settings.build(opts({ preview('com.example.app.FooKt.Greeting') }))
+
+    assert.are.same({}, dropped)
+  end)
+
   it('encodes classPath as a JSON array', function()
     local encoded = vim.json.encode(settings.build(opts({ preview('com.example.app.FooKt.Greeting') })))
 
