@@ -11,6 +11,60 @@ local function touch(path)
   vim.fn.writefile({ '' }, path)
 end
 
+describe('gradle.read_info', function()
+  local function write(contents)
+    local path = vim.fn.tempname()
+    vim.fn.writefile(vim.split(contents, '\n'), path)
+    return path
+  end
+
+  it('decodes the JSON the init script wrote', function()
+    local path = write('{"project":":app","namespace":"com.example","classPath":["/a.jar"]}')
+
+    local info = gradle.read_info(path)
+
+    assert.are.equal(':app', info.project)
+    assert.are.equal('com.example', info.namespace)
+    assert.are.same({ '/a.jar' }, info.classPath)
+  end)
+
+  it('returns nil and an error when the file is missing', function()
+    local info, err = gradle.read_info(vim.fn.tempname())
+
+    assert.is_nil(info)
+    assert.is_string(err)
+  end)
+
+  it('returns nil and an error when the JSON is broken', function()
+    local info, err = gradle.read_info(write('{ broken'))
+
+    assert.is_nil(info)
+    assert.is_string(err)
+  end)
+
+  it('never leaks JSON null as vim.NIL', function()
+    local info = gradle.read_info(write('{"project":":app","resourceApkPath":null}'))
+
+    assert.is_nil(info.resourceApkPath)
+  end)
+end)
+
+describe('gradle.task_line', function()
+  it('extracts the task name from a Gradle task line', function()
+    assert.are.equal(':app:compileDevDebugKotlin', gradle.task_line('> Task :app:compileDevDebugKotlin'))
+  end)
+
+  it('ignores the trailing status', function()
+    assert.are.equal(':app:processDebugResources', gradle.task_line('> Task :app:processDebugResources UP-TO-DATE'))
+  end)
+
+  it('returns nil for other output', function()
+    assert.is_nil(gradle.task_line('BUILD SUCCESSFUL in 4s'))
+    assert.is_nil(gradle.task_line('> Configure project :app'))
+    assert.is_nil(gradle.task_line(''))
+  end)
+end)
+
 describe('gradle.parse_info', function()
   it('extracts the JSON between the markers', function()
     local infos = gradle.parse_info(table.concat({
