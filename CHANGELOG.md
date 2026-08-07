@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.0] - 2026-08-08
+
+First release.
+
 ### Added
 
 - `:ComposePreview` renders every `@Preview` in the current buffer and opens the
@@ -26,3 +30,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Gradle is retried with a Java 21+ JDK when a build fails because the project
   requires a newer JVM.
 - The Gradle task being executed is reported while a build runs.
+
+[Unreleased]: https://github.com/ntsk/compose-preview.nvim/compare/v0.1.0...HEAD
+[0.1.0]: https://github.com/ntsk/compose-preview.nvim/releases/tag/v0.1.0
