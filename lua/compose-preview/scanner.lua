@@ -222,8 +222,14 @@ local function file_class_name(filename)
   return stem:sub(1, 1):upper() .. stem:sub(2) .. 'Kt'
 end
 
-function M.scan(source, filename)
-  local parser = vim.treesitter.get_string_parser(source, 'kotlin')
+function M.scan(source, filename, language)
+  language = language or 'kotlin'
+
+  local ok, parser = pcall(vim.treesitter.get_string_parser, source, language)
+  if not ok then
+    return nil, ('the %s treesitter parser is not available (try :TSInstall %s)'):format(language, language)
+  end
+
   local root = parser:parse()[1]:root()
 
   local prefix = package_name(root, source)

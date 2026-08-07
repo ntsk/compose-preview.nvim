@@ -74,7 +74,10 @@ local function prepare(bufnr)
   end
 
   local source = table.concat(vim.api.nvim_buf_get_lines(bufnr, 0, -1, false), '\n')
-  local previews = scanner.scan(source, file)
+  local previews, scan_err = scanner.scan(source, file)
+  if not previews then
+    return nil, scan_err
+  end
   if #previews == 0 then
     return nil, 'no @Preview found in this file'
   end
