@@ -41,7 +41,14 @@ belongs behind an injected path or option so it stays testable.
 
 `sample/` is a minimal Compose project used to check the whole pipeline. Open
 `sample/app/src/main/java/com/example/sample/Greeting.kt` and run
-`:ComposePreview`. Three previews should render.
+`:ComposePreview`. Seven cards should render from five `@Preview` declarations.
+
+The sample deliberately exercises the features that are easy to break:
+
+- `@PreviewLightDark`, which must produce visibly different colours because the
+  theme reads `isSystemInDarkTheme()`
+- several `@Preview` on one function, with `widthDp` changing the layout
+- a `@PreviewParameter` provider, which must expand into one card per value
 
 When you change how the renderer is invoked, verify against a project that uses
 product flavors and a recent AGP as well. Layouts under `build/intermediates`
