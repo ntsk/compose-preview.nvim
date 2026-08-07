@@ -1,0 +1,53 @@
+name: Bug report
+description: Something does not work
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Most problems are diagnosable from the health check and the log, so
+        please include both. They are far more useful than a description of the
+        symptom on its own.
+
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: What you did, what you expected, and what you got instead.
+    validations:
+      required: true
+
+  - type: textarea
+    id: health
+    attributes:
+      label: ":checkhealth compose-preview"
+      description: Paste the full output.
+      render: text
+    validations:
+      required: true
+
+  - type: textarea
+    id: log
+    attributes:
+      label: Log
+      description: >
+        Run :ComposePreviewLog and paste the entries for the failing run,
+        including the Gradle output. Redact anything you cannot share.
+      render: text
+    validations:
+      required: true
+
+  - type: input
+    id: agp
+    attributes:
+      label: Android Gradle Plugin and Gradle versions
+      placeholder: "AGP 8.7.3, Gradle 8.12.1"
+    validations:
+      required: true
+
+  - type: textarea
+    id: preview
+    attributes:
+      label: The @Preview that fails
+      description: The annotation and function signature, if you can share them.
+      render: kotlin
