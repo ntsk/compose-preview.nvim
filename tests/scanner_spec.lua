@@ -1,5 +1,15 @@
 local scanner = require('compose-preview.scanner')
 
+describe('scanner.scan without a parser', function()
+  it('returns nil and a message naming the missing parser', function()
+    local previews, err = scanner.scan('', 'Foo.kt', 'no_such_language')
+
+    assert.is_nil(previews)
+    assert.is_string(err)
+    assert.is_truthy(err:find('no_such_language', 1, true))
+  end)
+end)
+
 describe('scanner.scan', function()
   it('builds methodFQN from package and file name', function()
     local src = [[
