@@ -20,12 +20,7 @@ shows the resulting PNGs in your browser. No emulator, no device, no Android Stu
 </table>
 
 Real output from [`sample/`](sample/app/src/main/java/com/example/sample/Greeting.kt),
-rendered by the plugin. `widthDp` changes the layout the same way it does in
-Android Studio:
-
-<p align="center">
-  <img src="docs/preview-narrow.png" width="280" alt="The same card at widthDp = 220, wrapping onto more lines">
-</p>
+rendered by the plugin.
 
 ## How it works
 
