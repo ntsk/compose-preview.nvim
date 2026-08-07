@@ -1,6 +1,6 @@
 local M = {}
 
-M.CONSTANTS = {
+local CONSTANTS = {
   UI_MODE_NIGHT_UNDEFINED = 0x00,
   UI_MODE_NIGHT_NO = 0x10,
   UI_MODE_NIGHT_YES = 0x20,
@@ -21,21 +21,8 @@ M.CONSTANTS = {
   YELLOW_DOMINATED = 3,
 }
 
-M.INT_ATTRIBUTES = {
-  apiLevel = true,
-  widthDp = true,
-  heightDp = true,
-  uiMode = true,
-  wallpaper = true,
-  backgroundColor = true,
-}
-
-M.FLOAT_ATTRIBUTES = {
-  fontScale = true,
-}
-
-local function clean(text)
-  return vim.trim(tostring(text)):gsub('_', '')
+local function strip_digit_separators(text)
+  return (vim.trim(tostring(text)):gsub('_', ''))
 end
 
 local function resolve_term(term)
@@ -50,7 +37,7 @@ local function resolve_term(term)
     negative, term = true, body
   end
 
-  local literal = clean(term)
+  local literal = strip_digit_separators(term)
   local value = tonumber(literal)
   if not value and literal:match('^0[xX]%x+$') then
     value = tonumber(literal:sub(3), 16)
@@ -58,7 +45,7 @@ local function resolve_term(term)
 
   if not value then
     local symbol = term:match('([%w_]+)%s*$')
-    value = symbol and M.CONSTANTS[symbol] or nil
+    value = symbol and CONSTANTS[symbol] or nil
   end
 
   if not value then
@@ -97,7 +84,7 @@ function M.resolve_float(expression)
     return nil
   end
 
-  local text = clean(expression):gsub('[fFdD]$', '')
+  local text = strip_digit_separators(expression):gsub('[fFdD]$', '')
   local value = tonumber(text)
   if not value then
     return nil
@@ -110,27 +97,32 @@ function M.resolve_float(expression)
   return tostring(value)
 end
 
+local RESOLVERS = {
+  apiLevel = M.resolve_number,
+  widthDp = M.resolve_number,
+  heightDp = M.resolve_number,
+  uiMode = M.resolve_number,
+  wallpaper = M.resolve_number,
+  backgroundColor = M.resolve_number,
+  fontScale = M.resolve_float,
+}
+
 function M.normalize(raw)
   local resolved = {}
   local dropped = {}
 
   for key, value in pairs(raw or {}) do
-    if M.INT_ATTRIBUTES[key] then
-      local number = M.resolve_number(value)
-      if number then
-        resolved[key] = number
-      else
-        table.insert(dropped, key)
-      end
-    elseif M.FLOAT_ATTRIBUTES[key] then
-      local number = M.resolve_float(value)
-      if number then
-        resolved[key] = number
-      else
-        table.insert(dropped, key)
-      end
-    else
+    local resolve = RESOLVERS[key]
+
+    if not resolve then
       resolved[key] = value
+    else
+      local normalized = resolve(value)
+      if normalized then
+        resolved[key] = normalized
+      else
+        table.insert(dropped, key)
+      end
     end
   end
 

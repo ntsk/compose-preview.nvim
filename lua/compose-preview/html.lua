@@ -1,3 +1,5 @@
+local assets = require('compose-preview.assets')
+
 local M = {}
 
 local ENTITIES = {
@@ -11,125 +13,6 @@ local ENTITIES = {
 function M.escape(text)
   return (tostring(text):gsub('[&<>"\']', ENTITIES))
 end
-
-local STYLE = [[
-:root {
-  --bg: #ffffff;
-  --fg: #1f2328;
-  --muted: #656d76;
-  --border: #d1d9e0;
-  --card: #f6f8fa;
-  --error-bg: #fff1f0;
-  --error-fg: #b32b28;
-  --error-border: #ffb3b0;
-}
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #0d1117;
-    --fg: #e6edf3;
-    --muted: #8b949e;
-    --border: #30363d;
-    --card: #161b22;
-    --error-bg: #2b1214;
-    --error-fg: #ff8d85;
-    --error-border: #6b2a2a;
-  }
-}
-* { box-sizing: border-box; }
-body {
-  margin: 0;
-  padding: 24px;
-  background: var(--bg);
-  color: var(--fg);
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
-  line-height: 1.5;
-}
-header {
-  display: flex;
-  align-items: baseline;
-  gap: 12px;
-  flex-wrap: wrap;
-  border-bottom: 1px solid var(--border);
-  padding-bottom: 12px;
-  margin-bottom: 24px;
-}
-h1 { font-size: 18px; margin: 0; font-weight: 600; }
-.meta { color: var(--muted); font-size: 13px; }
-.grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 20px;
-}
-.card {
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  overflow: hidden;
-  background: var(--card);
-}
-.card-title {
-  padding: 8px 12px;
-  font-size: 13px;
-  font-weight: 600;
-  border-bottom: 1px solid var(--border);
-  word-break: break-all;
-}
-.card-body {
-  padding: 12px;
-  display: flex;
-  justify-content: center;
-  background-image:
-    linear-gradient(45deg, rgba(128,128,128,.12) 25%, transparent 25%),
-    linear-gradient(-45deg, rgba(128,128,128,.12) 25%, transparent 25%),
-    linear-gradient(45deg, transparent 75%, rgba(128,128,128,.12) 75%),
-    linear-gradient(-45deg, transparent 75%, rgba(128,128,128,.12) 75%);
-  background-size: 16px 16px;
-  background-position: 0 0, 0 8px, 8px -8px, -8px 0;
-}
-.card-body img { max-width: 100%; height: auto; display: block; }
-.banner, .error {
-  background: var(--error-bg);
-  color: var(--error-fg);
-  border: 1px solid var(--error-border);
-  border-radius: 6px;
-  padding: 12px;
-  font-size: 13px;
-}
-.banner { margin-bottom: 20px; }
-.error { border: none; border-radius: 0; }
-.error pre {
-  margin: 8px 0 0;
-  overflow-x: auto;
-  font-size: 12px;
-  white-space: pre-wrap;
-  word-break: break-word;
-}
-.empty { color: var(--muted); }
-]]
-
-local SCRIPT = [[
-(function () {
-  var current = window.__composePreviewToken;
-  if (!current) return;
-  var key = 'compose-preview-scroll';
-  var saved = sessionStorage.getItem(key);
-  if (saved) window.scrollTo(0, parseInt(saved, 10) || 0);
-  window.addEventListener('scroll', function () {
-    sessionStorage.setItem(key, String(window.scrollY));
-  });
-  setInterval(function () {
-    var probe = document.createElement('script');
-    probe.src = 'token.js?t=' + Date.now();
-    probe.onload = function () {
-      if (window.__composePreviewLatest && window.__composePreviewLatest !== current) {
-        location.reload();
-      }
-      probe.remove();
-    };
-    probe.onerror = function () { probe.remove(); };
-    document.head.appendChild(probe);
-  }, 1500);
-})();
-]]
 
 local function render_card(item)
   local title = M.escape(item.label or item.name or '(unnamed)')
@@ -188,7 +71,7 @@ function M.build(opts)
   add('<html lang="en"><head><meta charset="utf-8">')
   add(('<title>%s - Compose Preview</title>'):format(M.escape(opts.title or 'Compose Preview')))
   add('<meta name="viewport" content="width=device-width, initial-scale=1">')
-  add(('<style>%s</style>'):format(STYLE))
+  add(('<style>%s</style>'):format(assets.style()))
   add('</head><body>')
 
   add('<header>')
@@ -215,7 +98,7 @@ function M.build(opts)
 
   if opts.token then
     add(('<script>window.__composePreviewToken = "%s";</script>'):format(M.escape(opts.token)))
-    add(('<script>%s</script>'):format(SCRIPT))
+    add(('<script>%s</script>'):format(assets.script()))
   end
 
   add('</body></html>')

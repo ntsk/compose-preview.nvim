@@ -6,30 +6,49 @@ local function text(node, source)
   return vim.treesitter.get_node_text(node, source)
 end
 
-local function last_type_identifier(node, source)
-  local found
-  local function walk(n)
-    if n:type() == 'type_identifier' then
-      found = text(n, source)
+--- Iterates the direct children of `node` whose type is `kind`.
+local function children(node, kind)
+  return coroutine.wrap(function()
+    for node_child in node:iter_children() do
+      if node_child:type() == kind then
+        coroutine.yield(node_child)
+      end
     end
-    for child in n:iter_children() do
-      walk(child)
+  end)
+end
+
+--- Returns the first direct child of `node` whose type is `kind`.
+local function child(node, kind)
+  for node_child in node:iter_children() do
+    if node_child:type() == kind then
+      return node_child
     end
   end
+end
+
+local function last_type_identifier(node, source)
+  local found
+
+  local function walk(current)
+    if current:type() == 'type_identifier' then
+      found = text(current, source)
+    end
+    for descendant in current:iter_children() do
+      walk(descendant)
+    end
+  end
+
   walk(node)
   return found
 end
 
 local function argument_value(node, source)
-  if node:type() == 'string_literal' then
-    for child in node:iter_children() do
-      if child:type() == 'string_content' then
-        return text(child, source)
-      end
-    end
-    return ''
+  if node:type() ~= 'string_literal' then
+    return text(node, source)
   end
-  return text(node, source)
+
+  local content = child(node, 'string_content')
+  return content and text(content, source) or ''
 end
 
 local function parse_arguments(value_arguments, source)
@@ -38,21 +57,19 @@ local function parse_arguments(value_arguments, source)
     return params
   end
 
-  for argument in value_arguments:iter_children() do
-    if argument:type() == 'value_argument' then
-      local key, value, seen_equals
-      for child in argument:iter_children() do
-        if child:type() == '=' then
-          seen_equals = true
-        elseif seen_equals then
-          value = child
-        else
-          key = child
-        end
+  for argument in children(value_arguments, 'value_argument') do
+    local key, value, seen_equals
+    for node in argument:iter_children() do
+      if node:type() == '=' then
+        seen_equals = true
+      elseif seen_equals then
+        value = node
+      else
+        key = node
       end
-      if key and value then
-        params[text(key, source)] = argument_value(value, source)
-      end
+    end
+    if key and value then
+      params[text(key, source)] = argument_value(value, source)
     end
   end
 
@@ -60,53 +77,44 @@ local function parse_arguments(value_arguments, source)
 end
 
 local function annotation_parts(annotation, source)
-  for child in annotation:iter_children() do
-    local kind = child:type()
-    if kind == 'user_type' then
-      return last_type_identifier(child, source), nil
-    elseif kind == 'constructor_invocation' then
-      local name, value_arguments
-      for grandchild in child:iter_children() do
-        if grandchild:type() == 'user_type' then
-          name = last_type_identifier(grandchild, source)
-        elseif grandchild:type() == 'value_arguments' then
-          value_arguments = grandchild
-        end
-      end
-      return name, value_arguments
-    end
+  local bare = child(annotation, 'user_type')
+  if bare then
+    return last_type_identifier(bare, source), nil
   end
+
+  local invocation = child(annotation, 'constructor_invocation')
+  if not invocation then
+    return nil
+  end
+
+  local name = child(invocation, 'user_type')
+  return name and last_type_identifier(name, source), child(invocation, 'value_arguments')
 end
 
 local function preview_annotations(declaration, source)
   local found = {}
-  for child in declaration:iter_children() do
-    if child:type() == 'modifiers' then
-      for modifier in child:iter_children() do
-        if modifier:type() == 'annotation' then
-          local name, value_arguments = annotation_parts(modifier, source)
-          if name == 'Preview' then
-            table.insert(found, parse_arguments(value_arguments, source))
-          else
-            local expanded = multipreview.expand(name)
-            if expanded then
-              vim.list_extend(found, expanded)
-            end
-          end
-        end
+
+  for modifiers in children(declaration, 'modifiers') do
+    for annotation in children(modifiers, 'annotation') do
+      local name, value_arguments = annotation_parts(annotation, source)
+      if name == 'Preview' then
+        table.insert(found, parse_arguments(value_arguments, source))
+      else
+        vim.list_extend(found, multipreview.expand(name) or {})
       end
     end
   end
+
   return found
 end
 
 local function function_name_node(declaration)
   local seen_fun
-  for child in declaration:iter_children() do
-    if child:type() == 'fun' then
+  for node in declaration:iter_children() do
+    if node:type() == 'fun' then
       seen_fun = true
-    elseif seen_fun and child:type() == 'simple_identifier' then
-      return child
+    elseif seen_fun and node:type() == 'simple_identifier' then
+      return node
     end
   end
 end
@@ -114,17 +122,12 @@ end
 local function imports(root, source)
   local by_simple_name = {}
 
-  for child in root:iter_children() do
-    if child:type() == 'import_list' then
-      for header in child:iter_children() do
-        if header:type() == 'import_header' then
-          for part in header:iter_children() do
-            if part:type() == 'identifier' then
-              local fqn = text(part, source)
-              by_simple_name[fqn:match('([^.]+)$')] = fqn
-            end
-          end
-        end
+  for list in children(root, 'import_list') do
+    for header in children(list, 'import_header') do
+      local identifier = child(header, 'identifier')
+      if identifier then
+        local fqn = text(identifier, source)
+        by_simple_name[fqn:match('([^.]+)$')] = fqn
       end
     end
   end
@@ -137,15 +140,13 @@ local function provider_reference(value_arguments, source)
     return nil
   end
 
-  for argument in value_arguments:iter_children() do
-    if argument:type() == 'value_argument' then
-      for child in argument:iter_children() do
-        local kind = child:type()
-        if kind == 'callable_reference' or kind == 'navigation_expression' then
-          local reference = text(child, source)
-          if reference:match('::%s*class%s*$') then
-            return (reference:gsub('%s*::%s*class%s*$', ''))
-          end
+  for argument in children(value_arguments, 'value_argument') do
+    for node in argument:iter_children() do
+      local kind = node:type()
+      if kind == 'callable_reference' or kind == 'navigation_expression' then
+        local reference = text(node, source)
+        if reference:match('::%s*class%s*$') then
+          return (reference:gsub('%s*::%s*class%s*$', ''))
         end
       end
     end
@@ -196,18 +197,12 @@ end
 local function method_params(declaration, source, context)
   local found = {}
 
-  for child in declaration:iter_children() do
-    if child:type() == 'function_value_parameters' then
-      for node in child:iter_children() do
-        if node:type() == 'parameter_modifiers' then
-          for modifier in node:iter_children() do
-            if modifier:type() == 'annotation' then
-              local entry = preview_parameter(modifier, source, context)
-              if entry then
-                table.insert(found, entry)
-              end
-            end
-          end
+  for parameters in children(declaration, 'function_value_parameters') do
+    for modifiers in children(parameters, 'parameter_modifiers') do
+      for annotation in children(modifiers, 'annotation') do
+        local entry = preview_parameter(annotation, source, context)
+        if entry then
+          table.insert(found, entry)
         end
       end
     end
@@ -217,15 +212,9 @@ local function method_params(declaration, source, context)
 end
 
 local function package_name(root, source)
-  for child in root:iter_children() do
-    if child:type() == 'package_header' then
-      for grandchild in child:iter_children() do
-        if grandchild:type() == 'identifier' then
-          return text(grandchild, source)
-        end
-      end
-    end
-  end
+  local header = child(root, 'package_header')
+  local identifier = header and child(header, 'identifier')
+  return identifier and text(identifier, source) or nil
 end
 
 local function file_class_name(filename)
@@ -243,21 +232,21 @@ function M.scan(source, filename)
   local context = { package = prefix, imports = imports(root, source) }
 
   local previews = {}
-  for child in root:iter_children() do
-    if child:type() == 'function_declaration' then
-      local name_node = function_name_node(child)
-      if name_node then
-        local name = text(name_node, source)
-        local parameters = method_params(child, source, context)
-        for _, params in ipairs(preview_annotations(child, source)) do
-          table.insert(previews, {
-            name = name,
-            method_fqn = qualifier .. '.' .. name,
-            line = name_node:start() + 1,
-            params = params,
-            method_params = parameters,
-          })
-        end
+
+  for declaration in children(root, 'function_declaration') do
+    local name_node = function_name_node(declaration)
+    if name_node then
+      local name = text(name_node, source)
+      local parameters = method_params(declaration, source, context)
+
+      for _, params in ipairs(preview_annotations(declaration, source)) do
+        table.insert(previews, {
+          name = name,
+          method_fqn = qualifier .. '.' .. name,
+          line = name_node:start() + 1,
+          params = params,
+          method_params = parameters,
+        })
       end
     end
   end
