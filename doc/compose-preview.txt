@@ -81,6 +81,9 @@ Open a Kotlin file that contains at least one `@Preview` and run: >
 The first run downloads the rendering toolchain, roughly 300 MB, into the
 cache directory. Later runs reuse it.
 
+While Gradle builds, the task it is running is reported, so a slow first build
+is not silent. Every task is recorded in the log regardless.
+
 Each `@Preview` becomes its own card in the generated page. When a preview
 declares a name, as in `@Preview(name = "Dark")`, that name is used as the card
 heading. Previews that fail to render show their error message and stack trace

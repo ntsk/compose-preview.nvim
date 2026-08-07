@@ -43,15 +43,27 @@ gradle.projectsEvaluated {
                     }
 
                     doLast {
+                        def emit = { payload ->
+                            def json = groovy.json.JsonOutput.toJson(payload)
+                            def destination = p.findProperty('composePreviewOutput')
+                            if (destination) {
+                                def file = new File(destination.toString())
+                                file.parentFile?.mkdirs()
+                                file.text = json
+                            } else {
+                                println 'COMPOSE_PREVIEW_INFO_BEGIN'
+                                println json
+                                println 'COMPOSE_PREVIEW_INFO_END'
+                            }
+                        }
+
                         if (!variant || !variants.contains(variant)) {
-                            println 'COMPOSE_PREVIEW_INFO_BEGIN'
-                            println groovy.json.JsonOutput.toJson([
+                            emit([
                                 project          : p.path,
                                 variant          : variant,
                                 availableVariants: variants,
                                 error            : "variant '${variant}' not found",
                             ])
-                            println 'COMPOSE_PREVIEW_INFO_END'
                             return
                         }
 
@@ -105,8 +117,7 @@ gradle.projectsEvaluated {
 
                         def android = p.extensions.findByName('android')
 
-                        println 'COMPOSE_PREVIEW_INFO_BEGIN'
-                        println groovy.json.JsonOutput.toJson([
+                        emit([
                             project          : p.path,
                             variant          : variant,
                             availableVariants: variants,
@@ -115,7 +126,6 @@ gradle.projectsEvaluated {
                             projectClassPath : projectClasses,
                             resourceApkPath  : resourceApk,
                         ])
-                        println 'COMPOSE_PREVIEW_INFO_END'
                     }
                 }
             }

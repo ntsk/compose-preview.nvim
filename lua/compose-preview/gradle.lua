@@ -2,9 +2,6 @@ local log = require('compose-preview.log')
 
 local M = {}
 
-local BEGIN_MARKER = 'COMPOSE_PREVIEW_INFO_BEGIN'
-local END_MARKER = 'COMPOSE_PREVIEW_INFO_END'
-
 local function denil(value)
   if value == vim.NIL then
     return nil
@@ -20,31 +17,22 @@ local function denil(value)
   return result
 end
 
-function M.parse_info(stdout)
-  local infos = {}
-  local block, inside = nil, false
-
-  for line in (stdout .. '\n'):gmatch('([^\n]*)\n') do
-    local trimmed = vim.trim(line)
-    if trimmed == BEGIN_MARKER then
-      inside, block = true, {}
-    elseif trimmed == END_MARKER and inside then
-      local ok, decoded = pcall(vim.json.decode, table.concat(block, '\n'))
-      if not ok then
-        return nil, ('failed to parse JSON emitted by Gradle: %s'):format(tostring(decoded))
-      end
-      table.insert(infos, denil(decoded))
-      inside = false
-    elseif inside then
-      table.insert(block, line)
-    end
+function M.read_info(path)
+  if vim.fn.filereadable(path) ~= 1 then
+    return nil, ('Gradle did not write %s'):format(path)
   end
 
-  if #infos == 0 then
-    return nil, 'Gradle output contains no preview info'
+  local contents = table.concat(vim.fn.readfile(path), '\n')
+  local ok, decoded = pcall(vim.json.decode, contents)
+  if not ok then
+    return nil, ('failed to parse %s: %s'):format(path, tostring(decoded))
   end
 
-  return infos
+  return denil(decoded)
+end
+
+function M.task_line(line)
+  return line:match('^>%s+Task%s+(:[%w:_%-%.]+)')
 end
 
 function M.find_project_root(path)
@@ -85,11 +73,14 @@ function M.command(opts)
   local cmd = {
     vim.fs.joinpath(opts.root, 'gradlew'),
     '--console=plain',
-    '-q',
     (opts.module or '') .. ':composePreviewInfo',
     '--init-script',
     opts.init_script,
   }
+
+  if opts.info_path then
+    table.insert(cmd, '-PcomposePreviewOutput=' .. opts.info_path)
+  end
 
   if opts.variant then
     table.insert(cmd, '-PcomposePreviewVariant=' .. opts.variant)
@@ -146,19 +137,39 @@ function M.build_and_inspect(opts, on_done)
     return on_done('Gradle init script not found')
   end
 
+  local info_path = opts.info_path
   local cmd = M.command({
     root = opts.root,
     module = opts.module,
     variant = opts.variant,
     init_script = init_script,
+    info_path = info_path,
   })
 
   local function run(java_home, on_result)
-    local system_opts = { cwd = opts.root, text = true }
+    local system_opts = {
+      cwd = opts.root,
+      text = true,
+      stdout = function(_, data)
+        if not data then
+          return
+        end
+        for line in data:gmatch('[^\n]+') do
+          local task = M.task_line(line)
+          if task and opts.on_progress then
+            vim.schedule(function()
+              opts.on_progress(task)
+            end)
+          end
+        end
+      end,
+    }
+
     if java_home then
       system_opts.env = { JAVA_HOME = java_home }
     end
 
+    vim.fn.delete(info_path)
     log.info(('running: %s%s'):format(java_home and ('JAVA_HOME=' .. java_home .. ' ') or '', table.concat(cmd, ' ')))
 
     vim.system(cmd, system_opts, function(result)
@@ -188,18 +199,18 @@ function M.build_and_inspect(opts, on_done)
       return on_done(('Gradle failed (exit %d): %s'):format(result.code, M.first_error_line(result)))
     end
 
-    local infos, err = M.parse_info(result.stdout or '')
-    if not infos then
-      log.error(('could not parse Gradle output\n--- stdout ---\n%s'):format(result.stdout or ''))
+    log.info(('Gradle succeeded\n--- stdout ---\n%s'):format(result.stdout or ''))
+
+    local info, err = M.read_info(info_path)
+    if not info then
       return on_done(err)
     end
 
-    local info = infos[1]
     if info.error then
       return on_done(M.describe_variant_error(info.variant, info.availableVariants))
     end
 
-    on_done(nil, info, infos)
+    on_done(nil, info)
   end
 
   run(opts.java_home, function(result)

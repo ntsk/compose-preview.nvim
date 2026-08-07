@@ -25,3 +25,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   are resolved to the numbers the renderer expects.
 - Gradle is retried with a Java 21+ JDK when a build fails because the project
   requires a newer JVM.
+- The Gradle task being executed is reported while a build runs.

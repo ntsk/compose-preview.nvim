@@ -117,6 +117,7 @@ function M.open(bufnr)
   dirs.output = vim.fs.joinpath(dirs.work, OUTPUT_DIR_NAME)
   dirs.metadata = vim.fs.joinpath(dirs.work, 'meta')
   dirs.page = vim.fs.joinpath(dirs.work, 'index.html')
+  vim.fn.mkdir(dirs.work, 'p')
 
   local title = vim.fs.basename(file)
 
@@ -137,12 +138,25 @@ function M.open(bufnr)
     end
 
     notify(('building %s...'):format(module == '' and ':' or module))
+
+    local last_reported = 0
+    local function report(task)
+      log.info('task ' .. task)
+      local now = vim.uv.hrtime()
+      if now - last_reported > 2e9 then
+        last_reported = now
+        vim.notify('[compose-preview] ' .. task, vim.log.levels.INFO)
+      end
+    end
+
     gradle.build_and_inspect({
       root = root,
       module = module,
       variant = M.config.variant,
+      info_path = vim.fs.joinpath(dirs.work, 'gradle-info.json'),
       java_home = M.config.gradle_java_home,
       fallback_java_home = renderer.java_home(M.config.java or renderer.find_java()),
+      on_progress = report,
     }, function(gradle_err, info)
       if gradle_err then
         return fail(gradle_err)

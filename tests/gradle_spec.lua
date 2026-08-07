@@ -65,61 +65,6 @@ describe('gradle.task_line', function()
   end)
 end)
 
-describe('gradle.parse_info', function()
-  it('extracts the JSON between the markers', function()
-    local infos = gradle.parse_info(table.concat({
-      'Starting a Gradle Daemon',
-      'COMPOSE_PREVIEW_INFO_BEGIN',
-      '{"project":":app","namespace":"com.example","classPath":["/a.jar"],"projectClassPath":["/c"],"resourceApkPath":"/r.ap_"}',
-      'COMPOSE_PREVIEW_INFO_END',
-      'BUILD SUCCESSFUL',
-    }, '\n'))
-
-    assert.are.equal(1, #infos)
-    assert.are.equal(':app', infos[1].project)
-    assert.are.equal('com.example', infos[1].namespace)
-    assert.are.same({ '/a.jar' }, infos[1].classPath)
-    assert.are.equal('/r.ap_', infos[1].resourceApkPath)
-  end)
-
-  it('extracts a block for every module', function()
-    local infos = gradle.parse_info(table.concat({
-      'COMPOSE_PREVIEW_INFO_BEGIN',
-      '{"project":":app","namespace":"com.example.app"}',
-      'COMPOSE_PREVIEW_INFO_END',
-      'COMPOSE_PREVIEW_INFO_BEGIN',
-      '{"project":":core","namespace":"com.example.core"}',
-      'COMPOSE_PREVIEW_INFO_END',
-    }, '\n'))
-
-    assert.are.equal(2, #infos)
-    assert.are.equal(':app', infos[1].project)
-    assert.are.equal(':core', infos[2].project)
-  end)
-
-  it('returns nil and an error when the markers are absent', function()
-    local infos, err = gradle.parse_info('BUILD FAILED\nSomething went wrong')
-
-    assert.is_nil(infos)
-    assert.is_string(err)
-  end)
-
-  it('returns nil and an error when the JSON is broken', function()
-    local infos, err = gradle.parse_info('COMPOSE_PREVIEW_INFO_BEGIN\n{ broken\nCOMPOSE_PREVIEW_INFO_END')
-
-    assert.is_nil(infos)
-    assert.is_string(err)
-  end)
-
-  it('never leaks JSON null as vim.NIL', function()
-    local infos = gradle.parse_info(
-      'COMPOSE_PREVIEW_INFO_BEGIN\n{"project":":app","resourceApkPath":null}\nCOMPOSE_PREVIEW_INFO_END'
-    )
-
-    assert.is_nil(infos[1].resourceApkPath)
-  end)
-end)
-
 describe('gradle.command', function()
   local function opts(extra)
     return vim.tbl_extend('force', {
