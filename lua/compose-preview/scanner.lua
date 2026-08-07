@@ -227,7 +227,7 @@ function M.scan(source, filename, language)
 
   local ok, parser = pcall(vim.treesitter.get_string_parser, source, language)
   if not ok then
-    return nil, ('the %s treesitter parser is not available (try :TSInstall %s)'):format(language, language)
+    return nil, ('the %s treesitter parser is not available'):format(language)
   end
 
   local root = parser:parse()[1]:root()

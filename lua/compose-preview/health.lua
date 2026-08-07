@@ -49,7 +49,7 @@ function M.evaluate(env)
       'treesitter',
       'error',
       'the kotlin treesitter parser is not available',
-      'install it, for example with :TSInstall kotlin'
+      'install the kotlin parser however you manage treesitter parsers, and make sure it is on the runtimepath'
     )
   end
 
