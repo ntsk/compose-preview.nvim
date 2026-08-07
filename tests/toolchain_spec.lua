@@ -6,13 +6,18 @@ local function tmpdir()
   return dir
 end
 
+local function touch(path)
+  assert(type(path) == 'string' and path ~= '', 'refusing to write to a non-string path: ' .. vim.inspect(path))
+  vim.fn.mkdir(vim.fs.dirname(path), 'p')
+  vim.fn.writefile({ '' }, path)
+end
+
 local function install_fake(dir)
   local paths = toolchain.paths({ cache_dir = dir })
-  vim.fn.mkdir(vim.fs.dirname(paths.renderer_jar), 'p')
-  vim.fn.writefile({ '' }, paths.renderer_jar)
-  vim.fn.writefile({ '' }, paths.layoutlib_jar)
+  touch(paths.renderer_jar)
+  touch(paths.layoutlib_jar)
   vim.fn.mkdir(paths.layoutlib_dir .. '/data/fonts', 'p')
-  vim.fn.writefile({ '' }, paths.framework_res_jar)
+  touch(paths.framework_res_jar)
   return paths
 end
 
