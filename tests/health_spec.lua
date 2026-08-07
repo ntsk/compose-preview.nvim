@@ -36,7 +36,10 @@ describe('health.evaluate', function()
   end)
 
   it('errors when java is missing', function()
-    local result = by_name(health.evaluate(env({ java = nil, java_version = nil }))).java
+    local without_java = env()
+    without_java.java, without_java.java_version = nil, nil
+
+    local result = by_name(health.evaluate(without_java)).java
 
     assert.are.equal('error', result.status)
     assert.is_string(result.advice)
