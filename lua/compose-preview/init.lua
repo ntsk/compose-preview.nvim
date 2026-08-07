@@ -120,8 +120,15 @@ function M.open(bufnr)
 
   local title = vim.fs.basename(file)
 
-  log.info(('open: file=%s root=%s module=%s previews=%d variant=%s')
-    :format(file, root, module, #previews, tostring(M.config.variant)))
+  log.info(
+    ('open: file=%s root=%s module=%s previews=%d variant=%s'):format(
+      file,
+      root,
+      module,
+      #previews,
+      tostring(M.config.variant)
+    )
+  )
 
   notify('preparing toolchain...')
   toolchain.install({ cache_dir = M.config.cache_dir }, function(install_err, paths)

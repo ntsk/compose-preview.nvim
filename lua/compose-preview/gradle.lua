@@ -137,10 +137,7 @@ function M.first_error_line(result)
 end
 
 function M.describe_variant_error(variant, available)
-  return ('variant %s not found. available variants: %s'):format(
-    tostring(variant),
-    table.concat(available or {}, ', ')
-  )
+  return ('variant %s not found. available variants: %s'):format(tostring(variant), table.concat(available or {}, ', '))
 end
 
 function M.build_and_inspect(opts, on_done)
@@ -162,10 +159,7 @@ function M.build_and_inspect(opts, on_done)
       system_opts.env = { JAVA_HOME = java_home }
     end
 
-    log.info(('running: %s%s'):format(
-      java_home and ('JAVA_HOME=' .. java_home .. ' ') or '',
-      table.concat(cmd, ' ')
-    ))
+    log.info(('running: %s%s'):format(java_home and ('JAVA_HOME=' .. java_home .. ' ') or '', table.concat(cmd, ' ')))
 
     vim.system(cmd, system_opts, function(result)
       vim.schedule(function()
@@ -176,11 +170,13 @@ function M.build_and_inspect(opts, on_done)
 
   local function handle(result, retried)
     if result.code ~= 0 then
-      log.error(('Gradle exited %d\n--- stderr ---\n%s\n--- stdout ---\n%s'):format(
-        result.code,
-        result.stderr or '',
-        result.stdout or ''
-      ))
+      log.error(
+        ('Gradle exited %d\n--- stderr ---\n%s\n--- stdout ---\n%s'):format(
+          result.code,
+          result.stderr or '',
+          result.stdout or ''
+        )
+      )
 
       if not retried and M.needs_newer_jvm(result) and opts.fallback_java_home then
         log.info('retrying with JAVA_HOME=' .. opts.fallback_java_home)

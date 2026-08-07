@@ -23,8 +23,10 @@ local function screenshots(previews)
   for index, preview in ipairs(previews) do
     local resolved, dropped = params.normalize(preview.params)
     if #dropped > 0 then
-      log.write('WARN', ('%s: dropped unresolvable @Preview attributes: %s')
-        :format(preview.method_fqn, table.concat(dropped, ', ')))
+      log.write(
+        'WARN',
+        ('%s: dropped unresolvable @Preview attributes: %s'):format(preview.method_fqn, table.concat(dropped, ', '))
+      )
     end
 
     local screenshot = {

@@ -30,7 +30,10 @@ describe('params.resolve_number', function()
   end)
 
   it('folds a Kotlin "or" expression', function()
-    assert.are.equal('33', params.resolve_number('Configuration.UI_MODE_NIGHT_YES or Configuration.UI_MODE_TYPE_NORMAL'))
+    assert.are.equal(
+      '33',
+      params.resolve_number('Configuration.UI_MODE_NIGHT_YES or Configuration.UI_MODE_TYPE_NORMAL')
+    )
   end)
 
   it('folds a pipe expression', function()

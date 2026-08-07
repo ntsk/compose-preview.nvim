@@ -36,7 +36,9 @@ function M.find_java()
   end
 
   if vim.fn.executable('/usr/libexec/java_home') == 1 then
-    local home = vim.system({ '/usr/libexec/java_home', '-v', tostring(M.MINIMUM_JAVA_VERSION) }, { text = true }):wait()
+    local home = vim
+      .system({ '/usr/libexec/java_home', '-v', tostring(M.MINIMUM_JAVA_VERSION) }, { text = true })
+      :wait()
     if home.code == 0 then
       table.insert(candidates, vim.fs.joinpath(vim.trim(home.stdout), 'bin', 'java'))
     end
@@ -53,8 +55,7 @@ function M.find_java()
     end
   end
 
-  return nil,
-    ('Java %d or newer not found. set opts.java to an absolute path to java'):format(M.MINIMUM_JAVA_VERSION)
+  return nil, ('Java %d or newer not found. set opts.java to an absolute path to java'):format(M.MINIMUM_JAVA_VERSION)
 end
 
 function M.java_home(java_path)
@@ -93,8 +94,7 @@ function M.render(opts, on_done)
     timeout = opts.timeout or M.DEFAULT_TIMEOUT_MS,
   }, function(result)
     vim.schedule(function()
-      local raw = vim.fn.filereadable(opts.results_path) == 1
-        and table.concat(vim.fn.readfile(opts.results_path), '\n')
+      local raw = vim.fn.filereadable(opts.results_path) == 1 and table.concat(vim.fn.readfile(opts.results_path), '\n')
         or nil
 
       if not raw then

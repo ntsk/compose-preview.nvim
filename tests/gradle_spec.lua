@@ -58,7 +58,9 @@ describe('gradle.parse_info', function()
   end)
 
   it('never leaks JSON null as vim.NIL', function()
-    local infos = gradle.parse_info('COMPOSE_PREVIEW_INFO_BEGIN\n{"project":":app","resourceApkPath":null}\nCOMPOSE_PREVIEW_INFO_END')
+    local infos = gradle.parse_info(
+      'COMPOSE_PREVIEW_INFO_BEGIN\n{"project":":app","resourceApkPath":null}\nCOMPOSE_PREVIEW_INFO_END'
+    )
 
     assert.is_nil(infos[1].resourceApkPath)
   end)

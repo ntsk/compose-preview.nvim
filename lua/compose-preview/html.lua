@@ -158,8 +158,10 @@ local function render_card(item)
         table.insert(parts, ('<p>%s</p>'):format(M.escape(text)))
       end
       if problem.stack_trace and problem.stack_trace ~= '' then
-        table.insert(parts, ('<details><summary>stack trace</summary><pre>%s</pre></details>')
-          :format(M.escape(problem.stack_trace)))
+        table.insert(
+          parts,
+          ('<details><summary>stack trace</summary><pre>%s</pre></details>'):format(M.escape(problem.stack_trace))
+        )
       end
     end
 
