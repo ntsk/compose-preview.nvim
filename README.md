@@ -1,5 +1,8 @@
 # compose-preview.nvim
 
+[![CI](https://github.com/ntsk/compose-preview.nvim/actions/workflows/ci.yml/badge.svg)](https://github.com/ntsk/compose-preview.nvim/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+
 Render Jetpack Compose `@Preview` from Neovim.
 
 It runs the same rendering engine Android Studio uses (layoutlib) standalone and
@@ -35,6 +38,35 @@ alpha16 only works with **17.0.0**, so the versions above are not interchangeabl
 - The `kotlin` treesitter parser
 - **Java 21 or newer** (layoutlib is built as class file 65.0)
 - A Compose project with the Android SDK and a Gradle wrapper
+
+## Installation
+
+With [lazy.nvim](https://github.com/folke/lazy.nvim):
+
+```lua
+{
+  'ntsk/compose-preview.nvim',
+  ft = 'kotlin',
+  cmd = 'ComposePreview',
+  opts = {},
+}
+```
+
+With [packer.nvim](https://github.com/wbthomason/packer.nvim):
+
+```lua
+use({
+  'ntsk/compose-preview.nvim',
+  config = function()
+    require('compose-preview').setup({})
+  end,
+})
+```
+
+Calling `setup()` is optional; the defaults work without it.
+
+Then run `:checkhealth compose-preview` to confirm Java, the Kotlin treesitter
+parser, and the external tools are in place.
 
 ## Usage
 
@@ -75,6 +107,8 @@ that was detected for the renderer. Set `gradle_java_home` to pin it yourself.
 
 ## Troubleshooting
 
+Start with `:checkhealth compose-preview`.
+
 `:ComposePreviewLog` opens the log, which records every step, the exact Gradle
 command, and the full Gradle output on failure. Notifications only show the first
 error line, so the log is the place to look.
@@ -94,3 +128,13 @@ The first run fetches the test dependencies (plenary.nvim and a Kotlin treesitte
 parser) into `.tests/`.
 
 `sample/` is a minimal Compose project used to verify the plugin end to end.
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for the full development workflow.
+
+## Documentation
+
+`:help compose-preview` covers every option and the behaviour in detail.
+
+## License
+
+MIT. See [LICENSE](LICENSE).

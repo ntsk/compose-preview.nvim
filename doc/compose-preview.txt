@@ -1,0 +1,255 @@
+*compose-preview.txt*  Render Jetpack Compose @Preview from Neovim
+
+Author:   ntsk
+License:  MIT
+Homepage: https://github.com/ntsk/compose-preview.nvim
+
+==============================================================================
+CONTENTS                                                *compose-preview-toc*
+
+    1. Introduction ................ |compose-preview-introduction|
+    2. Requirements ................ |compose-preview-requirements|
+    3. Installation ................ |compose-preview-installation|
+    4. Usage ....................... |compose-preview-usage|
+    5. Commands .................... |compose-preview-commands|
+    6. Configuration ............... |compose-preview-configuration|
+    7. Preview annotations ......... |compose-preview-annotations|
+    8. Build variants .............. |compose-preview-variants|
+    9. Java ........................ |compose-preview-jvm|
+   10. Toolchain ................... |compose-preview-toolchain|
+   11. Troubleshooting ............. |compose-preview-troubleshooting|
+   12. Limitations ................. |compose-preview-limitations|
+
+==============================================================================
+1. INTRODUCTION                                *compose-preview-introduction*
+
+compose-preview.nvim renders Jetpack Compose `@Preview` functions and shows the
+result in a browser. It runs layoutlib, the same rendering engine Android
+Studio uses, as a standalone process. No emulator, no device, and no Android
+Studio installation are involved.
+
+The pipeline is:
+>
+    find @Preview in the buffer with treesitter
+      -> resolve classpath and resource APK through Gradle
+      -> run compose-preview-renderer (layoutlib)
+      -> PNG + results.json
+      -> generate HTML and open it in a browser
+<
+==============================================================================
+2. REQUIREMENTS                                *compose-preview-requirements*
+
+- Neovim 0.11 or newer
+- The `kotlin` treesitter parser
+- Java 21 or newer, because layoutlib is built as class file 65.0
+- `curl` and `unzip` on PATH
+- A Compose project with the Android SDK and a Gradle wrapper
+
+Run |:checkhealth| compose-preview to verify all of the above.
+
+==============================================================================
+3. INSTALLATION                                *compose-preview-installation*
+
+With lazy.nvim: >lua
+
+    {
+      'ntsk/compose-preview.nvim',
+      ft = 'kotlin',
+      cmd = 'ComposePreview',
+      opts = {},
+    }
+<
+With packer.nvim: >lua
+
+    use({
+      'ntsk/compose-preview.nvim',
+      config = function()
+        require('compose-preview').setup({})
+      end,
+    })
+<
+Calling |compose-preview.setup()| is optional. The plugin works with its
+defaults if you never call it.
+
+==============================================================================
+4. USAGE                                              *compose-preview-usage*
+
+Open a Kotlin file that contains at least one `@Preview` and run: >
+
+    :ComposePreview
+<
+The first run downloads the rendering toolchain, roughly 300 MB, into the
+cache directory. Later runs reuse it.
+
+Each `@Preview` becomes its own card in the generated page. When a preview
+declares a name, as in `@Preview(name = "Dark")`, that name is used as the card
+heading. Previews that fail to render show their error message and stack trace
+in place, so a single broken preview does not hide the others.
+
+==============================================================================
+5. COMMANDS                                        *compose-preview-commands*
+
+                                                            *:ComposePreview*
+:ComposePreview         Render every `@Preview` in the current buffer and open
+                        the result in a browser.
+
+                                                         *:ComposePreviewLog*
+:ComposePreviewLog      Open the log file in a new tab and jump to the end.
+
+==============================================================================
+6. CONFIGURATION                              *compose-preview-configuration*
+
+                                                  *compose-preview.setup()*
+setup({opts})           Merge {opts} into the configuration.
+
+Defaults: >lua
+
+    require('compose-preview').setup({
+      variant = nil,
+      java = nil,
+      gradle_java_home = nil,
+      open_cmd = nil,
+      cache_dir = nil,
+      timeout = 180000,
+    })
+<
+                                                    *compose-preview-variant*
+variant                 string|nil, default nil
+                        The Gradle build variant to render. Detected from the
+                        project when nil. See |compose-preview-variants|.
+
+                                                       *compose-preview-java*
+java                    string|nil, default nil
+                        Absolute path to the `java` binary used to run the
+                        renderer. Detected when nil. See |compose-preview-jvm|.
+
+                                           *compose-preview-gradle_java_home*
+gradle_java_home        string|nil, default nil
+                        `JAVA_HOME` for the Gradle process. Inherited from the
+                        environment when nil.
+
+                                                   *compose-preview-open_cmd*
+open_cmd                table|nil, default nil
+                        Command used to open the generated page, given as a
+                        list. The page path is appended as the last argument.
+                        |vim.ui.open()| is used when nil. For example: >lua
+
+                            open_cmd = { 'open', '-a', 'Google Chrome' }
+<
+                                                  *compose-preview-cache_dir*
+cache_dir               string|nil, default nil
+                        Where the toolchain and render output are kept.
+                        `stdpath('cache')/compose-preview` when nil.
+
+                                                    *compose-preview-timeout*
+timeout                 number, default 180000
+                        Milliseconds to wait for the renderer before giving up.
+                        The renderer can hang, so this is a hard limit rather
+                        than a formality.
+
+==============================================================================
+7. PREVIEW ANNOTATIONS                          *compose-preview-annotations*
+
+Plain `@Preview` annotations are read directly, including their arguments.
+Several `@Preview` annotations on one function each become their own preview.
+
+Attribute values are resolved before being handed to the renderer, which only
+accepts numbers for numeric attributes. The following forms are understood:
+
+    Configuration.UI_MODE_NIGHT_YES         -> 32
+    UI_MODE_NIGHT_YES or UI_MODE_TYPE_NORMAL -> 33
+    0xFF0000                                 -> 16711680
+    2f                                       -> 2.0
+    Wallpapers.NONE                          -> -1
+
+A numeric attribute that cannot be resolved, such as one referring to a
+constant defined in your own project, is dropped for that preview and reported
+in the log as `WARN`. The preview still renders, just without that attribute.
+
+                                            *compose-preview-multipreview*
+These built-in multipreview annotations are expanded:
+
+    @PreviewLightDark       2 previews
+    @PreviewFontScale       7 previews
+    @PreviewDynamicColors   4 previews
+    @PreviewScreenSizes     5 previews
+
+                                          *compose-preview-previewparameter*
+`@PreviewParameter` is supported. The provider class is resolved through the
+file's imports, or through the file's package when it is declared alongside the
+preview. Every value the provider produces is rendered and shown as its own
+card, numbered in the heading.
+
+==============================================================================
+8. BUILD VARIANTS                                  *compose-preview-variants*
+
+The variant is detected from the Gradle tasks a project actually defines, so
+projects with product flavors work without configuration. Among the variants
+that look like debug builds, the shortest name is chosen.
+
+To pick one yourself: >lua
+
+    require('compose-preview').setup({ variant = 'productionDebug' })
+<
+If the configured variant does not exist, the error message lists the variants
+that do.
+
+==============================================================================
+9. JAVA                                                 *compose-preview-jvm*
+
+Two separate JVMs are involved.
+
+The renderer needs Java 21 or newer. It is located by checking `$JAVA_HOME`,
+then `/usr/libexec/java_home -v 21` on macOS, then `java` on PATH, and taking
+the first that reports a high enough version. Set |compose-preview-java| to
+skip the search.
+
+Gradle runs with whatever `JAVA_HOME` Neovim inherited, because a project may
+depend on a specific JDK. If the build fails because the project requires a
+newer JVM, it is retried once with the Java 21+ JDK found for the renderer. Set
+|compose-preview-gradle_java_home| to pin it instead.
+
+==============================================================================
+10. TOOLCHAIN                                     *compose-preview-toolchain*
+
+Rendering uses four artifacts from Google Maven, downloaded on first use:
+
+    com.android.tools.compose:compose-preview-renderer   0.0.1-alpha16
+    com.android.tools.layoutlib:layoutlib                17.0.0
+    com.android.tools.layoutlib:layoutlib-runtime        17.0.1
+    com.android.tools.layoutlib:layoutlib-resources      17.0.1
+
+These versions are not independent. The `RecyclableImage` ABI changed between
+layoutlib 17.0.0 and 17.0.1, and renderer alpha16 only works with 17.0.0.
+
+==============================================================================
+11. TROUBLESHOOTING                         *compose-preview-troubleshooting*
+
+Run |:checkhealth| compose-preview first. It reports the Neovim version, the
+Java version actually found, the treesitter parser, the external tools, and
+whether the toolchain has been downloaded.
+
+|:ComposePreviewLog| opens the log. It records every step, the exact Gradle
+command that ran, and the complete Gradle output when a build fails.
+Notifications only carry the first error line, so the log is where to look.
+
+Previews render as a grey box naming a class ~
+    The classpath is missing generated R classes. This usually means the build
+    directory holds stale output from an older Android Gradle Plugin. Run a
+    clean build of the project.
+
+Nothing renders and the log shows a JVM version complaint ~
+    See |compose-preview-jvm|.
+
+==============================================================================
+12. LIMITATIONS                                 *compose-preview-limitations*
+
+- Multipreview annotations declared in your own project are not expanded, only
+  the built-in ones listed in |compose-preview-multipreview|.
+- Previews must be top-level functions.
+- The page does not refresh by itself reliably; re-run |:ComposePreview| after
+  changing code.
+- Attribute values that need a full Kotlin frontend to resolve are dropped. See
+  |compose-preview-annotations|.
+
+vim:tw=78:ts=8:noet:ft=help:norl:
