@@ -8,6 +8,25 @@ Render Jetpack Compose `@Preview` from Neovim.
 It runs the same rendering engine Android Studio uses (layoutlib) standalone and
 shows the resulting PNGs in your browser. No emulator, no device, no Android Studio.
 
+<table>
+  <tr>
+    <td width="50%"><img src="docs/preview-light.png" alt="A Material 3 card rendered in the light colour scheme"></td>
+    <td width="50%"><img src="docs/preview-dark.png" alt="The same card rendered in the dark colour scheme"></td>
+  </tr>
+  <tr>
+    <td align="center"><code>@PreviewLightDark</code> — light</td>
+    <td align="center"><code>@PreviewLightDark</code> — dark</td>
+  </tr>
+</table>
+
+Real output from [`sample/`](sample/app/src/main/java/com/example/sample/Greeting.kt),
+rendered by the plugin. `widthDp` changes the layout the same way it does in
+Android Studio:
+
+<p align="center">
+  <img src="docs/preview-narrow.png" width="280" alt="The same card at widthDp = 220, wrapping onto more lines">
+</p>
+
 ## How it works
 
 ```
