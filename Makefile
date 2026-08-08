@@ -3,12 +3,16 @@ PLENARY := $(TESTS_DIR)/plenary.nvim
 KOTLIN_REPO := $(TESTS_DIR)/tree-sitter-kotlin
 KOTLIN_PARSER := $(TESTS_DIR)/parser/kotlin.so
 
-.PHONY: test deps clean
+.PHONY: test e2e deps clean
 
 test: deps
 	nvim --headless --clean \
 		-u tests/minimal_init.lua \
 		-c "PlenaryBustedDirectory tests/ { minimal_init = 'tests/minimal_init.lua' }"
+
+# Renders sample/ for real. Needs a JDK 21+, the Android SDK and the network.
+e2e: $(KOTLIN_PARSER)
+	nvim --headless --clean -l tests/e2e.lua
 
 deps: $(PLENARY) $(KOTLIN_PARSER)
 

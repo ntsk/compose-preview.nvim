@@ -37,6 +37,14 @@ run the single-file command when a suite disappears from the output.
 The unit tests never touch the network, Gradle, or Java. Anything that does
 belongs behind an injected path or option so it stays testable.
 
+```sh
+make e2e
+```
+
+renders `sample/` for real and checks the output. It needs a JDK 21+, the Android
+SDK and the network, which is why it is a separate target. Run it when you change
+how Gradle is invoked, how the renderer is called, or the pinned versions.
+
 ## Verifying against a real project
 
 `sample/` is a minimal Compose project used to check the whole pipeline. Open
@@ -83,7 +91,8 @@ of them, render the sample project and confirm the images are real output rather
 than the grey broken-class placeholder.
 
 Renovate watches those three constants and opens a single grouped pull request
-when any of them moves. **Do not merge such a pull request on CI alone.** CI runs
-the Lua tests, which never invoke Gradle or the renderer, so a broken
-renderer/layoutlib combination passes every check. Render `sample/` locally and
-look at the images before merging.
+when any of them moves. The `render sample` CI job covers those pull requests: it
+runs `make e2e`, which renders `sample/` for real and fails when a preview comes
+back as a broken-class placeholder. Its toolchain cache is keyed on
+`toolchain.lua`, so a version bump misses the cache and downloads exactly the
+versions being proposed.
