@@ -15,6 +15,17 @@ vim.opt.runtimepath:prepend(vim.fs.joinpath(root, '.tests'))
 
 local function die(message)
   io.stderr:write('e2e: ' .. message .. '\n')
+
+  -- Whatever went wrong, the detail is in the log rather than the notification.
+  -- CI throws the workspace away, so print it here or it is lost.
+  local log_path = require('compose-preview').log_path()
+  if vim.fn.filereadable(log_path) == 1 then
+    io.stderr:write('e2e: --- ' .. log_path .. ' ---\n')
+    for _, line in ipairs(vim.fn.readfile(log_path)) do
+      io.stderr:write(line .. '\n')
+    end
+  end
+
   os.exit(1)
 end
 
@@ -23,10 +34,16 @@ local function find_results()
   return matches[1]
 end
 
-local messages = {}
-vim.notify = function(message)
-  table.insert(messages, message)
+-- Anything the plugin reports as an error ends the run. Matching on message
+-- text instead would quietly turn a real failure into a timeout.
+local failure, done
+vim.notify = function(message, level)
   print(message)
+  if level == vim.log.levels.ERROR then
+    failure = message
+  elseif message:match('rendered %d+ previews') or message:match('previews failed') then
+    done = true
+  end
 end
 
 local preview = require('compose-preview')
@@ -36,13 +53,12 @@ vim.cmd.edit(vim.fs.joinpath(root, 'sample/app/src/main/java/com/example/sample/
 preview.open()
 
 local finished = vim.wait(20 * 60 * 1000, function()
-  for _, message in ipairs(messages) do
-    if message:match('rendered %d+ previews') or message:match('previews failed') or message:match('not ') then
-      return true
-    end
-  end
-  return false
+  return failure ~= nil or done == true
 end, 200)
+
+if failure then
+  die(failure)
+end
 
 if not finished then
   die('timed out waiting for the render to finish')
