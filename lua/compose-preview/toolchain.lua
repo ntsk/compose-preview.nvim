@@ -1,7 +1,7 @@
 local M = {}
 
 M.RENDERER_VERSION = '0.0.1-alpha16'
-M.LAYOUTLIB_VERSION = '17.0.0'
+M.LAYOUTLIB_VERSION = '17.0.1'
 M.LAYOUTLIB_DATA_VERSION = '17.0.1'
 
 local MAVEN_BASE = 'https://dl.google.com/dl/android/maven2'
