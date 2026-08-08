@@ -36,6 +36,14 @@
 
   packageRules: [
     {
+      // layoutlib 17.0.1 changed the RecyclableImage ABI and does not work with
+      // any renderer published so far: rendering fails with AbstractMethodError.
+      // Lift this cap when a renderer newer than 0.0.1-alpha16 ships, and let
+      // the `render sample` job decide whether the pair actually works.
+      matchPackageNames: ['com.android.tools.layoutlib:layoutlib'],
+      allowedVersions: '<=17.0.0',
+    },
+    {
       // The renderer and layoutlib are a matched set: the RecyclableImage ABI
       // changed between layoutlib 17.0.0 and 17.0.1, and renderer alpha16 only
       // works with 17.0.0. Bumping one without the others breaks rendering in a

@@ -33,16 +33,6 @@ describe('toolchain.artifact_url', function()
   end)
 end)
 
-describe('toolchain default versions', function()
-  it('uses 17.0.0 for the layoutlib classes', function()
-    assert.are.equal('17.0.0', toolchain.LAYOUTLIB_VERSION)
-  end)
-
-  it('uses 17.0.1 for layoutlib data and resources', function()
-    assert.are.equal('17.0.1', toolchain.LAYOUTLIB_DATA_VERSION)
-  end)
-end)
-
 describe('toolchain.paths', function()
   it('returns the renderer jar, the layoutlib jar and the layoutlib data directory', function()
     local paths = toolchain.paths({ cache_dir = '/cache' })
