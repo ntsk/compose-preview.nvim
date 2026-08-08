@@ -5,8 +5,13 @@
 
 Render Jetpack Compose `@Preview` from Neovim.
 
-It runs the same rendering engine Android Studio uses (layoutlib) standalone and
-shows the resulting PNGs in your browser. No emulator, no device, no Android Studio.
+It renders with layoutlib through Google's standalone Compose preview renderer,
+built from the code Android Studio renders previews with but packaged to run
+headlessly, and shows the resulting PNGs in your browser. No emulator, no device,
+no Android Studio.
+
+Output is close to what Android Studio shows, but this is not Android Studio's
+preview and the two are not guaranteed to agree.
 
 <table>
   <tr>
@@ -47,6 +52,10 @@ The versions are pinned in [`lua/compose-preview/toolchain.lua`](lua/compose-pre
 They are not independent — the renderer only works with the layoutlib it was
 built against — so they are updated together and every change is checked by
 rendering `sample/` in CI.
+
+Google publishes the renderer as an alpha and does change its internals between
+releases; layoutlib is the mature part, and ships with every Android Studio
+release under its own versioning.
 
 ## Requirements
 
