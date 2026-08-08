@@ -36,7 +36,7 @@ jobs:
           distribution: temurin
           java-version: "21"
 
-      - uses: android-actions/setup-android@v3
+      - uses: android-actions/setup-android@v4
 
       - uses: rhysd/action-setup-vim@v1
         with:
