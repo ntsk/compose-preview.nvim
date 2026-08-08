@@ -59,9 +59,14 @@ The sample deliberately exercises the features that are easy to break:
 - a `@PreviewParameter` provider, which must expand into one card per value
 
 When you change how the renderer is invoked, verify against a project that uses
-product flavors and a recent AGP as well. Layouts under `build/intermediates`
-differ between AGP versions, and stale directories from older AGP versions are a
-recurring source of bugs.
+product flavors as well.
+
+`sample/` tracks the current Android Gradle Plugin, which means the code paths
+for older ones are not exercised by CI. `gradle/compose-preview.init.gradle`
+looks for the generated R classes in three places because the directory moved
+between AGP versions, and a stale directory left behind by an older AGP is a
+recurring source of bugs. Only the first of those three is covered here, so take
+care when touching that lookup.
 
 ## Style
 
