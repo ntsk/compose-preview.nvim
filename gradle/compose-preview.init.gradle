@@ -75,8 +75,16 @@ gradle.projectsEvaluated {
                             view.lenient(true)
                         }.files.files
 
+                        def capitalizedVariant = variant[0].toUpperCase() + variant.substring(1)
+
+                        // Where the compiled classes land depends on who compiled them:
+                        // the Kotlin Gradle plugin, AGP 9's built-in Kotlin, or javac.
                         def projectClasses = []
-                        ["tmp/kotlin-classes/${variant}", "intermediates/javac/${variant}/classes"].each { relative ->
+                        [
+                            "tmp/kotlin-classes/${variant}",
+                            "intermediates/built_in_kotlinc/${variant}/compile${capitalizedVariant}Kotlin/classes",
+                            "intermediates/javac/${variant}/classes",
+                        ].each { relative ->
                             def dir = new File(p.buildDir, relative)
                             if (dir.isDirectory()) {
                                 projectClasses << dir.absolutePath
