@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-08-09
+
+### Added
+
+- Projects built with Android Gradle Plugin 9 and its built-in Kotlin support are
+  now handled. Their compiled classes live somewhere the plugin did not look, so
+  previews came back with the project's own classes missing.
+
+### Fixed
+
+- A missing Kotlin treesitter parser is reported as such instead of surfacing an
+  internal Lua error.
+
+### Changed
+
+- The documentation no longer repeats the pinned toolchain versions, which only
+  went out of date. `lua/compose-preview/toolchain.lua` is the single source.
+
 ## [0.1.0] - 2026-08-08
 
 First release.
@@ -31,5 +49,6 @@ First release.
   requires a newer JVM.
 - The Gradle task being executed is reported while a build runs.
 
-[Unreleased]: https://github.com/ntsk/compose-preview.nvim/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/ntsk/compose-preview.nvim/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/ntsk/compose-preview.nvim/releases/tag/v0.2.0
 [0.1.0]: https://github.com/ntsk/compose-preview.nvim/releases/tag/v0.1.0
