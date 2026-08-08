@@ -1,0 +1,59 @@
+{
+  $schema: 'https://docs.renovatebot.com/renovate-schema.json',
+  extends: ['config:recommended'],
+  labels: ['dependencies'],
+  timezone: 'Asia/Tokyo',
+
+  customManagers: [
+    {
+      customType: 'regex',
+      managerFilePatterns: ['lua/compose-preview/toolchain.lua'],
+      matchStrings: ["M\\.RENDERER_VERSION = '(?<currentValue>[^']+)'"],
+      depNameTemplate: 'com.android.tools.compose:compose-preview-renderer',
+      datasourceTemplate: 'maven',
+      registryUrlTemplate: 'https://dl.google.com/dl/android/maven2',
+      versioningTemplate: 'maven',
+    },
+    {
+      customType: 'regex',
+      managerFilePatterns: ['lua/compose-preview/toolchain.lua'],
+      matchStrings: ["M\\.LAYOUTLIB_VERSION = '(?<currentValue>[^']+)'"],
+      depNameTemplate: 'com.android.tools.layoutlib:layoutlib',
+      datasourceTemplate: 'maven',
+      registryUrlTemplate: 'https://dl.google.com/dl/android/maven2',
+      versioningTemplate: 'maven',
+    },
+    {
+      customType: 'regex',
+      managerFilePatterns: ['lua/compose-preview/toolchain.lua'],
+      matchStrings: ["M\\.LAYOUTLIB_DATA_VERSION = '(?<currentValue>[^']+)'"],
+      depNameTemplate: 'com.android.tools.layoutlib:layoutlib-runtime',
+      datasourceTemplate: 'maven',
+      registryUrlTemplate: 'https://dl.google.com/dl/android/maven2',
+      versioningTemplate: 'maven',
+    },
+  ],
+
+  packageRules: [
+    {
+      // The renderer and layoutlib are a matched set: the RecyclableImage ABI
+      // changed between layoutlib 17.0.0 and 17.0.1, and renderer alpha16 only
+      // works with 17.0.0. Bumping one without the others breaks rendering in a
+      // way no test in this repository can catch, so these land as one pull
+      // request and are never merged automatically.
+      matchPackageNames: [
+        'com.android.tools.compose:compose-preview-renderer',
+        'com.android.tools.layoutlib:layoutlib',
+        'com.android.tools.layoutlib:layoutlib-runtime',
+      ],
+      groupName: 'Android rendering toolchain',
+      automerge: false,
+      // The renderer is only published as 0.0.1-alphaNN, so unstable versions
+      // have to be considered or there is nothing to update to.
+      ignoreUnstable: false,
+      prBodyNotes: [
+        ':warning: These versions are coupled. Before merging, render `sample/` with `:ComposePreview` and confirm the images are real output rather than a grey broken-class placeholder. See CONTRIBUTING.md.',
+      ],
+    },
+  ],
+}

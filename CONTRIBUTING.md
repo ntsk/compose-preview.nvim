@@ -81,3 +81,9 @@ They are not independent: the `RecyclableImage` ABI changed between layoutlib
 17.0.0 and 17.0.1, and renderer alpha16 only works with 17.0.0. If you bump any
 of them, render the sample project and confirm the images are real output rather
 than the grey broken-class placeholder.
+
+Renovate watches those three constants and opens a single grouped pull request
+when any of them moves. **Do not merge such a pull request on CI alone.** CI runs
+the Lua tests, which never invoke Gradle or the renderer, so a broken
+renderer/layoutlib combination passes every check. Render `sample/` locally and
+look at the images before merging.
