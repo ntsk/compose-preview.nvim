@@ -79,28 +79,3 @@ care when touching that lookup.
 stylua .
 luacheck .
 ```
-
-## Commits
-
-Keep the subject line short, imperative, capitalized, and under 50 characters.
-Add a body only when the change needs explaining.
-
-Do not use `git add -A`. Stage the files you meant to change.
-
-## Toolchain versions
-
-`lua/compose-preview/toolchain.lua` pins the renderer and layoutlib versions, and
-is the only place they appear. They are not independent: the renderer only works
-with the layoutlib it was built against, so bump them together and confirm the
-sample still renders real images rather than the grey broken-class placeholder.
-
-This has bitten before. When layoutlib 17.0.1 appeared, it changed the
-`RecyclableImage` ABI and stopped working with the renderer of the day, which
-failed with `AbstractMethodError` at render time and nowhere earlier.
-
-Renovate watches those three constants and opens a single grouped pull request
-when any of them moves. The `render sample` CI job covers those pull requests: it
-runs `make e2e`, which renders `sample/` for real and fails when a preview comes
-back as a broken-class placeholder. Its toolchain cache is keyed on
-`toolchain.lua`, so a version bump misses the cache and downloads exactly the
-versions being proposed.
