@@ -42,7 +42,7 @@ jobs:
           version: stable
 
       - name: Cache Gradle
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: |
             ~/.gradle/caches
@@ -52,7 +52,7 @@ jobs:
       # Keyed on the pinned versions, so a Renovate bump misses the cache and
       # downloads the versions it is actually proposing.
       - name: Cache rendering toolchain
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: .tests/cache
           key: toolchain-${{ hashFiles('lua/compose-preview/toolchain.lua') }}
