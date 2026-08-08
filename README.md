@@ -10,9 +10,6 @@ built from the code Android Studio renders previews with but packaged to run
 headlessly, and shows the resulting PNGs in your browser. No emulator, no device,
 no Android Studio.
 
-Output is close to what Android Studio shows, but this is not Android Studio's
-preview and the two are not guaranteed to agree.
-
 <table>
   <tr>
     <td width="50%"><img src="docs/preview-light.png" alt="A Material 3 card rendered in the light colour scheme"></td>

@@ -29,9 +29,6 @@ Compose preview renderer, which is built from the code Android Studio renders
 previews with but packaged to run headlessly. No emulator, no device, and no
 Android Studio installation are involved.
 
-Output is close to what Android Studio shows, but this is not Android Studio's
-preview and the two are not guaranteed to agree.
-
 The pipeline is:
 >
     find @Preview in the buffer with treesitter
