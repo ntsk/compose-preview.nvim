@@ -217,13 +217,16 @@ newer JVM, it is retried once with the Java 21+ JDK found for the renderer. Set
 
 Rendering uses four artifacts from Google Maven, downloaded on first use:
 
-    com.android.tools.compose:compose-preview-renderer   0.0.1-alpha16
-    com.android.tools.layoutlib:layoutlib                17.0.0
-    com.android.tools.layoutlib:layoutlib-runtime        17.0.1
-    com.android.tools.layoutlib:layoutlib-resources      17.0.1
+    com.android.tools.compose:compose-preview-renderer
+    com.android.tools.layoutlib:layoutlib
+    com.android.tools.layoutlib:layoutlib-runtime
+    com.android.tools.layoutlib:layoutlib-resources
 
-These versions are not independent. The `RecyclableImage` ABI changed between
-layoutlib 17.0.0 and 17.0.1, and renderer alpha16 only works with 17.0.0.
+The versions are pinned in `lua/compose-preview/toolchain.lua`. They are not
+independent: the renderer only works with the layoutlib it was built against, so
+they are updated together rather than one at a time.
+
+Run |:checkhealth| compose-preview to see where they were downloaded.
 
 ==============================================================================
 11. TROUBLESHOOTING                         *compose-preview-troubleshooting*

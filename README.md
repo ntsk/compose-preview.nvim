@@ -36,15 +36,17 @@ Rendering uses the artifacts Google publishes below. All of them come from Googl
 Maven, so an Android Studio installation is not needed. They are downloaded into
 `~/.cache/nvim/compose-preview` on first use (about 300 MB).
 
-| artifact | version | purpose |
-|---|---|---|
-| `com.android.tools.compose:compose-preview-renderer` | 0.0.1-alpha16 | the renderer itself |
-| `com.android.tools.layoutlib:layoutlib` | 17.0.0 | Android framework classes |
-| `com.android.tools.layoutlib:layoutlib-runtime` | 17.0.1 | native libraries and fonts |
-| `com.android.tools.layoutlib:layoutlib-resources` | 17.0.1 | framework resources |
+| artifact | purpose |
+|---|---|
+| `com.android.tools.compose:compose-preview-renderer` | the renderer itself |
+| `com.android.tools.layoutlib:layoutlib` | Android framework classes |
+| `com.android.tools.layoutlib:layoutlib-runtime` | native libraries and fonts |
+| `com.android.tools.layoutlib:layoutlib-resources` | framework resources |
 
-The `RecyclableImage` ABI changed between layoutlib 17.0.0 and 17.0.1. Renderer
-alpha16 only works with **17.0.0**, so the versions above are not interchangeable.
+The versions are pinned in [`lua/compose-preview/toolchain.lua`](lua/compose-preview/toolchain.lua).
+They are not independent — the renderer only works with the layoutlib it was
+built against — so they are updated together and every change is checked by
+rendering `sample/` in CI.
 
 ## Requirements
 

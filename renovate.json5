@@ -44,11 +44,10 @@
       allowedVersions: '<=17.0.0',
     },
     {
-      // The renderer and layoutlib are a matched set: the RecyclableImage ABI
-      // changed between layoutlib 17.0.0 and 17.0.1, and renderer alpha16 only
-      // works with 17.0.0. Bumping one without the others breaks rendering in a
-      // way no test in this repository can catch, so these land as one pull
-      // request and are never merged automatically.
+      // The renderer and layoutlib are a matched set: the renderer only works
+      // with the layoutlib it was built against. Bumping one without the others
+      // breaks rendering in a way only the `render sample` job can catch, so
+      // these land as a single pull request.
       matchPackageNames: [
         'com.android.tools.compose:compose-preview-renderer',
         'com.android.tools.layoutlib:layoutlib',

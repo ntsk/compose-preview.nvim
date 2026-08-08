@@ -89,11 +89,14 @@ Do not use `git add -A`. Stage the files you meant to change.
 
 ## Toolchain versions
 
-`lua/compose-preview/toolchain.lua` pins the renderer and layoutlib versions.
-They are not independent: the `RecyclableImage` ABI changed between layoutlib
-17.0.0 and 17.0.1, and renderer alpha16 only works with 17.0.0. If you bump any
-of them, render the sample project and confirm the images are real output rather
-than the grey broken-class placeholder.
+`lua/compose-preview/toolchain.lua` pins the renderer and layoutlib versions, and
+is the only place they appear. They are not independent: the renderer only works
+with the layoutlib it was built against, so bump them together and confirm the
+sample still renders real images rather than the grey broken-class placeholder.
+
+This has bitten before. When layoutlib 17.0.1 appeared, it changed the
+`RecyclableImage` ABI and stopped working with the renderer of the day, which
+failed with `AbstractMethodError` at render time and nowhere earlier.
 
 Renovate watches those three constants and opens a single grouped pull request
 when any of them moves. The `render sample` CI job covers those pull requests: it
