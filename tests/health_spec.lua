@@ -3,6 +3,7 @@ local health = require('compose-preview.health')
 local function env(overrides)
   return vim.tbl_extend('force', {
     nvim_supported = true,
+    windows = false,
     java = '/jdk21/bin/java',
     java_version = 21,
     kotlin_parser = true,
@@ -64,6 +65,13 @@ describe('health.evaluate', function()
     local result = by_name(health.evaluate(env({ executables = { curl = false, unzip = true } }))).curl
 
     assert.are.equal('error', result.status)
+  end)
+
+  it('reports Windows as unsupported', function()
+    local result = by_name(health.evaluate(env({ windows = true }))).os
+
+    assert.are.equal('error', result.status)
+    assert.is_string(result.advice)
   end)
 
   it('reports an unsupported Neovim version as an error', function()
