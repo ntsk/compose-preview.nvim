@@ -1,5 +1,7 @@
 local M = {}
 
+M.MAX_BYTES = 1024 * 1024
+
 function M.default_path()
   return vim.fs.joinpath(vim.fn.stdpath('log'), 'compose-preview.log')
 end
@@ -14,6 +16,10 @@ function M.write(level, message, opts)
   local path = opts.path or M.default_path()
 
   vim.fn.mkdir(vim.fs.dirname(path), 'p')
+
+  if vim.fn.getfsize(path) > (opts.max_bytes or M.MAX_BYTES) then
+    vim.fn.delete(path)
+  end
 
   local line = M.format(level, message, os.date('%Y-%m-%d %H:%M:%S'))
   local ok = pcall(function()
