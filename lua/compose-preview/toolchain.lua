@@ -72,8 +72,20 @@ local function run(cmd, on_done)
 end
 
 local function download(url, dest, on_done)
-  run({ 'curl', '-fsSL', '--create-dirs', '-o', dest, url }, function(err)
-    on_done(err and ('failed to download %s: %s'):format(url, err) or nil)
+  local partial = dest .. '.part'
+
+  run({ 'curl', '-fsSL', '--create-dirs', '-o', partial, url }, function(err)
+    if err then
+      vim.fn.delete(partial)
+      return on_done(('failed to download %s: %s'):format(url, err))
+    end
+
+    local renamed, rename_err = os.rename(partial, dest)
+    if not renamed then
+      return on_done(('failed to move %s into place: %s'):format(dest, tostring(rename_err)))
+    end
+
+    on_done(nil)
   end)
 end
 

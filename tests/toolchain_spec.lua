@@ -91,7 +91,53 @@ describe('toolchain.is_installed', function()
   end)
 end)
 
+local function stub_curl(script)
+  local bin = tmpdir()
+  local path = vim.fs.joinpath(bin, 'curl')
+  vim.fn.writefile(vim.split(script, '\n'), path)
+  vim.uv.fs_chmod(path, tonumber('755', 8))
+  return bin
+end
+
+local function install_with_path(dir, bin)
+  local saved = vim.env.PATH
+  vim.env.PATH = bin .. ':' .. saved
+
+  local done, received_err = false, nil
+  toolchain.install({ cache_dir = dir }, function(err)
+    done, received_err = true, err
+  end)
+  vim.wait(5000, function()
+    return done
+  end)
+
+  vim.env.PATH = saved
+  return done, received_err
+end
+
 describe('toolchain.install', function()
+  it('does not leave a partial file behind when a download is interrupted', function()
+    local dir = tmpdir()
+    local bin = stub_curl([[
+#!/bin/sh
+out=""
+prev=""
+for arg in "$@"; do
+  if [ "$prev" = "-o" ]; then out="$arg"; fi
+  prev="$arg"
+done
+mkdir -p "$(dirname "$out")"
+printf 'partial' > "$out"
+exit 23
+]])
+
+    local done, received_err = install_with_path(dir, bin)
+
+    assert.is_true(done)
+    assert.is_string(received_err)
+    assert.are.equal(0, vim.fn.filereadable(toolchain.paths({ cache_dir = dir }).renderer_jar))
+  end)
+
   it('returns paths without downloading when already installed', function()
     local dir = tmpdir()
     local expected = install_fake(dir)
