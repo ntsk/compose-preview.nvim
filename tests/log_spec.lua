@@ -44,6 +44,26 @@ describe('log.write', function()
     assert.are.equal(2, #vim.fn.readfile(path))
   end)
 
+  it('starts the file over once it grows past the size limit', function()
+    local path = vim.fn.tempname()
+
+    log.write('INFO', ('x'):rep(200), { path = path, max_bytes = 100 })
+    log.write('INFO', 'after rotation', { path = path, max_bytes = 100 })
+
+    local lines = vim.fn.readfile(path)
+    assert.are.equal(1, #lines)
+    assert.is_truthy(lines[1]:find('after rotation', 1, true))
+  end)
+
+  it('keeps appending below the size limit', function()
+    local path = vim.fn.tempname()
+
+    log.write('INFO', 'first', { path = path, max_bytes = 100 })
+    log.write('INFO', 'second', { path = path, max_bytes = 100 })
+
+    assert.are.equal(2, #vim.fn.readfile(path))
+  end)
+
   it('tolerates non-string messages', function()
     local path = vim.fn.tempname()
 
