@@ -4,6 +4,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
 Render Jetpack Compose `@Preview` from Neovim.
+Inspired by [previm](https://github.com/previm/previm).
 
 It renders with layoutlib through Google's standalone Compose preview renderer,
 built from the code Android Studio renders previews with but packaged to run
