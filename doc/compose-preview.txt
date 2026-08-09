@@ -24,9 +24,10 @@ CONTENTS                                                *compose-preview-toc*
 1. INTRODUCTION                                *compose-preview-introduction*
 
 compose-preview.nvim renders Jetpack Compose `@Preview` functions and shows the
-result in a browser. It runs layoutlib, the same rendering engine Android
-Studio uses, as a standalone process. No emulator, no device, and no Android
-Studio installation are involved.
+result in a browser. It renders with layoutlib through Google's standalone
+Compose preview renderer, which is built from the code Android Studio renders
+previews with but packaged to run headlessly. No emulator, no device, and no
+Android Studio installation are involved.
 
 The pipeline is:
 >
@@ -225,6 +226,10 @@ Rendering uses four artifacts from Google Maven, downloaded on first use:
 The versions are pinned in `lua/compose-preview/toolchain.lua`. They are not
 independent: the renderer only works with the layoutlib it was built against, so
 they are updated together rather than one at a time.
+
+Google publishes the renderer as an alpha and does change its internals between
+releases. layoutlib is the mature part, and ships with every Android Studio
+release under its own versioning.
 
 Run |:checkhealth| compose-preview to see where they were downloaded.
 
