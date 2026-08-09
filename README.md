@@ -57,6 +57,7 @@ release under its own versioning.
 
 ## Requirements
 
+- macOS or Linux (Windows is not supported)
 - Neovim 0.11 or newer
 - The `kotlin` treesitter parser
 - **Java 21 or newer** (layoutlib is built as class file 65.0)
