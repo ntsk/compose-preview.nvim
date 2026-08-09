@@ -175,9 +175,15 @@ local function publish(job, results)
 end
 
 function M.open(bufnr)
-  local job, err = prepare(bufnr or vim.api.nvim_get_current_buf())
+  bufnr = bufnr or vim.api.nvim_get_current_buf()
+
+  local job, err = prepare(bufnr)
   if not job then
     return fail(err)
+  end
+
+  if vim.bo[bufnr].modified then
+    notify('the buffer has unsaved changes; previews render the last saved version', vim.log.levels.WARN)
   end
 
   vim.fn.mkdir(job.work, 'p')
