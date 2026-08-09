@@ -14,6 +14,12 @@ function M.evaluate(env)
     table.insert(results, { name = name, status = status, message = message, advice = advice })
   end
 
+  if env.windows then
+    add('os', 'error', 'Windows is not supported', 'run Neovim inside WSL, where the plugin works as on Linux')
+  else
+    add('os', 'ok', 'running on a supported operating system')
+  end
+
   if env.nvim_supported then
     add('neovim', 'ok', ('Neovim %s or newer'):format(M.MINIMUM_NVIM))
   else
@@ -97,6 +103,7 @@ function M.probe(config)
 
   return {
     nvim_supported = vim.fn.has('nvim-' .. M.MINIMUM_NVIM) == 1,
+    windows = vim.fn.has('win32') == 1,
     java = java,
     java_version = java and java_version_of(java) or nil,
     kotlin_parser = kotlin_parser_available(),
