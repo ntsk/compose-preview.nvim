@@ -29,8 +29,13 @@ function M.log_path()
   return log.default_path()
 end
 
+local LEVEL_NAMES = {
+  [vim.log.levels.ERROR] = 'ERROR',
+  [vim.log.levels.WARN] = 'WARN',
+}
+
 local function notify(message, level)
-  log.write(level == vim.log.levels.ERROR and 'ERROR' or 'INFO', message)
+  log.write(LEVEL_NAMES[level] or 'INFO', message)
   vim.notify('[compose-preview] ' .. message, level or vim.log.levels.INFO)
 end
 
