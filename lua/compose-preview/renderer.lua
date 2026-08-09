@@ -36,9 +36,7 @@ function M.find_java()
   end
 
   if vim.fn.executable('/usr/libexec/java_home') == 1 then
-    local home = vim
-      .system({ '/usr/libexec/java_home', '-v', tostring(M.MINIMUM_JAVA_VERSION) }, { text = true })
-      :wait()
+    local home = vim.system({ '/usr/libexec/java_home', '-v', M.MINIMUM_JAVA_VERSION .. '+' }, { text = true }):wait()
     if home.code == 0 then
       table.insert(candidates, vim.fs.joinpath(vim.trim(home.stdout), 'bin', 'java'))
     end
