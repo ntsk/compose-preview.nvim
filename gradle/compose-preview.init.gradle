@@ -76,6 +76,7 @@ gradle.projectsEvaluated {
                         }.files.files
 
                         def capitalizedVariant = variant[0].toUpperCase() + variant.substring(1)
+                        def buildDirectory = p.layout.buildDirectory.get().asFile
 
                         // Where the compiled classes land depends on who compiled them:
                         // the Kotlin Gradle plugin, AGP 9's built-in Kotlin, or javac.
@@ -85,7 +86,7 @@ gradle.projectsEvaluated {
                             "intermediates/built_in_kotlinc/${variant}/compile${capitalizedVariant}Kotlin/classes",
                             "intermediates/javac/${variant}/classes",
                         ].each { relative ->
-                            def dir = new File(p.buildDir, relative)
+                            def dir = new File(buildDirectory, relative)
                             if (dir.isDirectory()) {
                                 projectClasses << dir.absolutePath
                             }
@@ -100,7 +101,7 @@ gradle.projectsEvaluated {
                             if (rClassJar != null) {
                                 return
                             }
-                            def dir = new File(p.buildDir, relative)
+                            def dir = new File(buildDirectory, relative)
                             if (dir.isDirectory()) {
                                 dir.eachFileRecurse { f ->
                                     if (rClassJar == null && f.name == 'R.jar') {
@@ -114,7 +115,7 @@ gradle.projectsEvaluated {
                         }
 
                         def resourceApk = null
-                        def apkDir = new File(p.buildDir, "intermediates/linked_resources_binary_format/${variant}")
+                        def apkDir = new File(buildDirectory, "intermediates/linked_resources_binary_format/${variant}")
                         if (apkDir.isDirectory()) {
                             apkDir.eachFileRecurse { f ->
                                 if (f.name.endsWith('.ap_')) {
