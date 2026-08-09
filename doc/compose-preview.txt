@@ -258,6 +258,8 @@ Nothing renders and the log shows a JVM version complaint ~
 - Multipreview annotations declared in your own project are not expanded, only
   the built-in ones listed in |compose-preview-multipreview|.
 - Previews must be top-level functions.
+- `@file:JvmName` is ignored: the class name is always derived from the file
+  name, so previews in a file with a renamed facade class fail to resolve.
 - The page does not refresh by itself reliably; re-run |:ComposePreview| after
   changing code.
 - Attribute values that need a full Kotlin frontend to resolve are dropped. See
